@@ -31,15 +31,21 @@ double read_timer( )
 
 void make_surface()
 {
+	// draw points with proper filtering, otherwise draw aliased points
     glEnable( GL_POINT_SMOOTH );
+	// glend the computed fragment color values with the values in the color buffers
     glEnable( GL_BLEND );
+	// something about blending the colors coming in with the colors already there
     glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 	
     glPointSize( 2 );
     glClearColor( 1, 1, 1, 1 );	
    
     glViewport (0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+	// specifies which matrix stack is the target for subsequent matrix operations
+	// projection - apply subsequent operations to the matrix stack
     glMatrixMode(GL_PROJECTION);
+	// replaces the current matrix with the identity matrix
     glLoadIdentity();  
 }
 
