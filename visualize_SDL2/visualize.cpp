@@ -7,11 +7,9 @@
 #include <SDL_opengl.h>
 #include <GL/glu.h>
 
-#define DEFAULT_FILENAME "data.txt"
-#define eps 0.1
-#define SCALE 200
-#define FPS 15
-#define MIN_SIZE 100
+#define WINDOW_WIDTH 1
+#define WINDOW_HEIGHT 1
+
 
 struct particle_t { float x, y; };
 	
@@ -31,7 +29,7 @@ double read_timer( )
     return (end.tv_sec - start.tv_sec) + 1.0e-6 * (end.tv_usec - start.tv_usec);
 }
 
-void make_surface( int sx, int sy )
+void make_surface()
 {
     glEnable( GL_POINT_SMOOTH );
     glEnable( GL_BLEND );
@@ -40,7 +38,7 @@ void make_surface( int sx, int sy )
     glPointSize( 2 );
     glClearColor( 1, 1, 1, 1 );	
    
-    glViewport (0, 0, sx, sy);
+    glViewport (0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();  
 }
