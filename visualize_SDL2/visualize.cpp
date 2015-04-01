@@ -7,7 +7,7 @@
 #include <SDL_opengl.h>
 #include <GL/glu.h>
 
-#define DEFAULT_FILENAME "sample.txt"
+#define DEFAULT_FILENAME "data.txt"
 #define eps 0.1
 #define SCALE 200
 #define FPS 15
