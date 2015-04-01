@@ -10,18 +10,12 @@
 
 double size;
 
-//
 //	tuned constants
-//
 #define density 0.0005
-#define mass	0.01
-#define cutoff	0.01
-#define min_r	(cutoff/100)
+#define mass	1.0
 #define dt		0.0005
 
-//
 //	timer
-//
 double read_timer( )
 {
 	static bool initialized = false;
@@ -36,17 +30,13 @@ double read_timer( )
 	return (end.tv_sec - start.tv_sec) + 1.0e-6 * (end.tv_usec - start.tv_usec);
 }
 
-//
 //	keep density constant
-//
 void set_size( int n )
 {
 	size = sqrt( density * n );
 }
 
-//
 //	Initialize the particle positions and velocities
-//
 void init_particles( int n, particle_t *p )
 {
 	srand48( time( NULL ) );
@@ -87,39 +77,29 @@ void init_particles( int n, particle_t *p )
 //
 void apply_force( particle_t &particle, particle_t &neighbor)
 {
-
-	double dx = neighbor.x - particle.x;
-	double dy = neighbor.y - particle.y;
-	double r2 = dx * dx + dy * dy;
+	double xdiff = neighbor.x - particle.x;
+	double ydiff = neighbor.y - particle.y;
+	double r2 = xdiff * xdiff + ydiff * ydiff;
 	double force = 0;
 	if (r2 != 0) {
-		force = mass*mass/r2;
+		force = 1/r2;
 	}
-
-		
-	double r = sqrt( r2 );
-	double coef = ( 1 - cutoff / r ) / r2 / mass;
-	particle.ax += coef * dx;
-	particle.ay += coef * dy;
+	double direction = atan(xdiff, ydiff);
+	particle.vx += cos(direction);
+	particle.vy += sin(direction);
 }
 
-//
 //	integrate the ODE
-//
 void move( particle_t &p )
 {
-	//
 	//	slightly simplified Velocity Verlet integration
 	//	conserves energy better than explicit Euler method
-	//
 	p.vx += p.ax * dt;
 	p.vy += p.ay * dt;
 	p.x  += p.vx * dt;
 	p.y  += p.vy * dt;
 
-	//
 	//	bounce from walls
-	//
 	while( p.x < 0 || p.x > size )
 	{
 		p.x  = p.x < 0 ? -p.x : 2*size-p.x;
@@ -132,9 +112,7 @@ void move( particle_t &p )
 	}
 }
 
-//
 //	I/O routines
-//
 void save( FILE *f, int n, particle_t *p )
 {
 	static bool first = true;
