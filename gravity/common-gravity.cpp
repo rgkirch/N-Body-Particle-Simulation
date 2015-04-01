@@ -11,9 +11,10 @@
 double size;
 
 //	tuned constants
-#define density 0.0005
+#define density	0.0005
 #define mass	1.0
 #define dt		0.0005
+#define size	1.0
 
 //	timer
 double read_timer( )
@@ -30,12 +31,6 @@ double read_timer( )
 	return (end.tv_sec - start.tv_sec) + 1.0e-6 * (end.tv_usec - start.tv_usec);
 }
 
-//	keep density constant
-void set_size( int n )
-{
-	size = sqrt( density * n );
-}
-
 //	Initialize the particle positions and velocities
 void init_particles( int n, particle_t *p )
 {
@@ -50,31 +45,27 @@ void init_particles( int n, particle_t *p )
 	
 	for( int i = 0; i < n; i++ ) 
 	{
-		//
 		//	make sure particles are not spatially sorted
-		//
 		int j = lrand48()%(n-i);
 		int k = shuffle[j];
 		shuffle[j] = shuffle[n-i-1];
 		
-		//
 		//	distribute particles evenly to ensure proper spacing
-		//
 		p[i].x = size*(1.+(k%sx))/(1+sx);
 		p[i].y = size*(1.+(k/sx))/(1+sy);
 
-		//
 		//	assign random velocities within a bound
-		//
-		p[i].vx = drand48()*2-1;
-		p[i].vy = drand48()*2-1;
+		// p[i].vx = drand48()*2-1;
+		// p[i].vy = drand48()*2-1;
+		p[i].vx = (int)(p[i].x - size/2) * drand48()*2-1;
+		p[i].vy = (int)(p[i].y - size/2) * drand48()*2-1;
+		// p[i].vx = 0;
+		// p[i].vy = 0;
 	}
 	free( shuffle );
 }
 
-//
 //	interact two particles
-//
 void apply_force( particle_t &particle, particle_t &neighbor)
 {
 	double xdiff = neighbor.x - particle.x;
@@ -84,16 +75,13 @@ void apply_force( particle_t &particle, particle_t &neighbor)
 	if (r2 != 0) {
 		force = 1/r2;
 	}
-	double direction = atan(xdiff, ydiff);
-	particle.vx += cos(direction);
-	particle.vy += sin(direction);
+	double direction = atan2(xdiff, ydiff);
+	particle.vx += sin(direction)*dt;
+	particle.vy += cos(direction)*dt;
 }
 
-//	integrate the ODE
 void move( particle_t &p )
 {
-	//	slightly simplified Velocity Verlet integration
-	//	conserves energy better than explicit Euler method
 	p.vx += p.ax * dt;
 	p.vy += p.ay * dt;
 	p.x  += p.vx * dt;
@@ -103,12 +91,14 @@ void move( particle_t &p )
 	while( p.x < 0 || p.x > size )
 	{
 		p.x  = p.x < 0 ? -p.x : 2*size-p.x;
-		p.vx = -p.vx;
+		// p.vx = -p.vx;
+		p.vx = 0;
 	}
 	while( p.y < 0 || p.y > size )
 	{
 		p.y  = p.y < 0 ? -p.y : 2*size-p.y;
-		p.vy = -p.vy;
+		// p.vy = -p.vy;
+		p.vy = 0;
 	}
 }
 
@@ -125,9 +115,7 @@ void save( FILE *f, int n, particle_t *p )
 		fprintf( f, "%g %g\n", p[i].x, p[i].y );
 }
 
-//
 //	command line option processing
-//
 int find_option( int argc, char **argv, const char *option )
 {
 	for( int i = 1; i < argc; i++ )

@@ -49,7 +49,6 @@ int main( int argc, char **argv )
 	particle_t *local = (particle_t*) malloc( nlocal * sizeof(particle_t) );
 	
 	//	initialize and distribute the particles
-	set_size( n );
 	if( rank == 0 )
 		init_particles( n, particles );
 	MPI_Scatterv( particles, partition_sizes, partition_offsets, PARTICLE, local, nlocal, PARTICLE, 0, MPI_COMM_WORLD );
