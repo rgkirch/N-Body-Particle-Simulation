@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <iostream>
+#include <fstream>
 #include <stdlib.h>
 #include <stdarg.h>    
 #include <vector>
@@ -8,7 +10,7 @@
 #include <GL/glu.h>
 
 #define WINDOW_SIZE 1
-
+#define DEFAULT_FILENAME "data.txt"
 
 struct particle_t
 {
@@ -56,12 +58,24 @@ int main( int argc, char *argv[] )
         return 1;
     }
     int n;
+	int count = 0;
     fscanf( f, "%d", &n );
+
+	double* particles = (double*) malloc( n * 2 * sizeof(double));
+	double tempPair[2] = {0.0, 0.0};
 	
-    particle_t p;
-    std::vector<particle_t> particles;
-    while( fscanf( f, "%g%g", &p.x, &p.y ) == 2 )
-        particles.push_back( p );
+	// if it is false that you have any more values to read in the current frame
+	// AND
+	// if it is also false that there is another pair of values to begin another frame
+	// THEN
+	// you are done so exit
+	// OTHERWISE
+	// there are more values to read in the current frame
+	while (1)
+	{
+		while(fscanf( f, "%g%g", &p.x, &p.y ) == 2)
+		{
+			particles.push_back( p );
     fclose( f );
 	
     // int nframes = particles.size( ) / n;
@@ -76,13 +90,13 @@ int main( int argc, char *argv[] )
         printf( "SDL_Init failed: %s\n", SDL_GetError( ) );
         return 1;
     }
-	SDL_Window *window =  SDL_CreateWindow( "Particle Simulation", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, window_size, window_size, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE );
+	SDL_Window *window =  SDL_CreateWindow( "Particle Simulation", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_SIZE, WINDOW_SIZE, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE );
     if( window == NULL ) {
         printf( "SDL_SetVideoMode failed: %s\n", SDL_GetError( ) );
         exit( 1 );
     }
     SDL_GLContext glcontext = SDL_GL_CreateContext(window);
-    make_surface( WINDOW_SIZE, WINDOW_SIZE );
+    make_surface( );
     for( bool done = false; !done; )
     {
         SDL_Event event;

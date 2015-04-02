@@ -1,0 +1,2 @@
+#! /bin/bash
+g++ -o visualize visualize.cpp -I/usr/include/SDL2  -lSDL2main -lSDL2 -lGL -lGLU

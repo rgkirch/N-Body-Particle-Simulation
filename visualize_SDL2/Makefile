@@ -8,7 +8,7 @@ ifeq ($(OSTYPE), Darwin)
   FRAMEWORKS = -framework SDL -framework OpenGL -framework Cocoa
 else
   ### Configurations for SDL2 for Ubuntu -- Tested with Ubuntu 14.04 ###
-  INCLUDES = -I/usr/local/include/SDL2
+  INCLUDES = -I/usr/include/SDL2
   LIBS = -lSDL2main -lSDL2 -lGL -lGLU
   FRAMEWORKS =
 endif
