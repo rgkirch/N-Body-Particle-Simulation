@@ -1,71 +1,88 @@
+#include <iostream>
+#include <vector>
 #include <mpi.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <SFML/Graphics.hpp>
 #include "common-gravity.h"
 
-//	benchmarking program
+using namespace std;
+
+#define WINDOW_WIDTH 800
+#define WINDOW_HEIGHT 600
+
+
+void create_window(sf::RenderWindow* w)
+{
+	// create window
+	sf::RenderWindow window( sf::VideoMode( WINDOW_WIDTH, WINDOW_HEIGHT ), "SFML Visualizer!" );
+	window.setVerticalSyncEnabled( true );
+	window.setFramerateLimit( 15 );
+	w = &window;
+}
+
 int main( int argc, char **argv )
 {	 
-	if( find_option( argc, argv, "-h" ) >= 0 )
-	{
-		printf( "Options:\n" );
-		printf( "-h to see this help\n" );
-		printf( "-n <int> to set the number of particles\n" );
-		printf( "-o <filename> to specify the output file name\n" );
-		return 0;
-	}
-	
 	int n = read_int( argc, argv, "-n", 1000 );
-	char *savename = read_string( argc, argv, "-o", NULL );
-	
 	//	set up MPI
 	int n_proc, rank;
 	MPI_Init( &argc, &argv );
 	MPI_Comm_size( MPI_COMM_WORLD, &n_proc );
 	MPI_Comm_rank( MPI_COMM_WORLD, &rank );
-	
-	//	allocate generic resources
-	FILE *fsave = savename && rank == 0 ? fopen( savename, "w" ) : NULL;
-
+	//	allocate memory for particles
 	particle_t *particles = (particle_t*) malloc( n * sizeof(particle_t) );
-	
+	//	define a particle
 	MPI_Datatype PARTICLE;
 	MPI_Type_contiguous( 6, MPI_DOUBLE, &PARTICLE );
 	MPI_Type_commit( &PARTICLE );
-	
 	//	set up the data partitioning across processors
+	//	define the offsets
 	int particle_per_proc = (n + n_proc - 1) / n_proc;
 	int *partition_offsets = (int*) malloc( (n_proc+1) * sizeof(int) );
 	for( int i = 0; i < n_proc+1; i++ )
 		partition_offsets[i] = min( i * particle_per_proc, n );
-	
+	//	define the sizes
 	int *partition_sizes = (int*) malloc( n_proc * sizeof(int) );
-
 	for( int i = 0; i < n_proc; i++ )
 		partition_sizes[i] = partition_offsets[i+1] - partition_offsets[i];
-	
 	//	allocate storage for local partition
 	int nlocal = partition_sizes[rank];
 	particle_t *local = (particle_t*) malloc( nlocal * sizeof(particle_t) );
-	
-	//	initialize and distribute the particles
+	//	initialize
+	double size = set_size( n );
+	cout << "size:" << size << endl;
+	//	every process creates a pointer to a renderwindow
+	sf::RenderWindow* window;
+	//	define a circle
+	sf::CircleShape circle(4, 8);
+	circle.setFillColor( sf::Color::Black );
 	if( rank == 0 )
+	{
+		//	init the particles
 		init_particles( n, particles );
+		//	only one process creates a window
+		create_window(window);
+	}
+	//	distribute the particles
 	MPI_Scatterv( particles, partition_sizes, partition_offsets, PARTICLE, local, nlocal, PARTICLE, 0, MPI_COMM_WORLD );
-	
 	//	simulate a number of time steps
 	double simulation_time = read_timer( );
 	for( int step = 0; step < NSTEPS; step++ )
 	{
-		//	collect all global data locally (not good idea to do)
+		//	collect all global data locally
 		MPI_Allgatherv( local, nlocal, PARTICLE, particles, partition_sizes, partition_offsets, PARTICLE, MPI_COMM_WORLD );
-		
-		//	save current step if necessary (slightly different semantics than in other codes)
-		if( find_option( argc, argv, "-no" ) == -1 )
-			if( fsave && (step%SAVEFREQ) == 0 )
-				save( fsave, n, particles );
-		
+		if( rank == 0 )
+		{
+			window->clear( sf::Color::White );
+			sf::CircleShape temp = circle;
+			for( int i = 0; i < n; ++i )
+			{
+				temp.setPosition( particles[i].x / size * WINDOW_WIDTH, particles[i].y / size * WINDOW_HEIGHT );
+				window->draw( temp );
+			}
+			window->display();
+		}
 		//	compute all forces
 		for( int i = 0; i < nlocal; i++ )
 		{
@@ -89,10 +106,7 @@ int main( int argc, char **argv )
 	free( partition_sizes );
 	free( local );
 	free( particles );
-	if( fsave )
-		fclose( fsave );
-	
+	//	end mpi portion
 	MPI_Finalize( );
-	
 	return 0;
 }

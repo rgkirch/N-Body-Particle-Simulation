@@ -22,7 +22,7 @@ typedef struct
 //  timing routines
 double read_timer( );
 
-void set_size( int n );
+double set_size( int n );
 
 //  simulation routines
 void init_particles( int n, particle_t *p );
