@@ -51,7 +51,7 @@ void init_particles( int n, particle_t *p )
 		shuffle[j] = shuffle[n-i-1];
 		
 		//	distribute particles evenly to ensure proper spacing
-		p[i].x = size*(1.+(k%sx))/(1+sx);
+
 		p[i].y = size*(1.+(k/sx))/(1+sy);
 
 		//	assign random velocities within a bound
