@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <assert.h>
-#include "common.h"
+#include "common-gravity.h"
 
 using namespace std;
 
@@ -34,21 +34,21 @@ int main( int argc, char **argv )
 	//	set up MPI
 	int n_proc, rank;
 	MPI_Init( &argc, &argv );
+	// ask the mpi communicator for n_proc and rank
 	MPI_Comm_size( MPI_COMM_WORLD, &n_proc );
 	MPI_Comm_rank( MPI_COMM_WORLD, &rank );
 
+	// define the right and left neighbor
 	int rightNeighbor = (rank + 1) % n_proc;
 	int leftNeighbor = (rank + n_proc - 1) % n_proc;
 
-	// cout << "from: " << rank << " left: " << leftNeighbor << " right: " << rightNeighbor << endl;
-
 	//	allocate generic resources
-	FILE *fsave = savename && rank == 0 ? fopen( savename, "w" ) : NULL;
-	FILE *fsum = sumname && rank == 0 ? fopen ( sumname, "a" ) : NULL;
-
+	// FILE *fsave = savename && rank == 0 ? fopen( savename, "w" ) : NULL;
+	// FILE *fsum = sumname && rank == 0 ? fopen ( sumname, "a" ) : NULL;
 
 	particle_t *particles = (particle_t*) malloc( n * sizeof(particle_t) );
 
+	// define a particle as 6 contiguous doubles
 	MPI_Datatype PARTICLE;
 	MPI_Type_contiguous( 6, MPI_DOUBLE, &PARTICLE );
 	MPI_Type_commit( &PARTICLE );
@@ -78,8 +78,6 @@ int main( int argc, char **argv )
 	particle_t *local = (particle_t*) malloc( nlocal* sizeof(particle_t) );
 	particle_t *oneLocal = (particle_t*) malloc( max_partition_size* sizeof(particle_t) );
 	particle_t *twoLocal = (particle_t*) malloc( max_partition_size* sizeof(particle_t) );
-
-
 
 	//  initialize and distribute the particles (that's fine to leave it unoptimized)
 	set_size( n );
@@ -136,7 +134,7 @@ int main( int argc, char **argv )
 				MPI_Recv(oneLocal, oneLength, PARTICLE, leftNeighbor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 				for (int iLocal = 0; iLocal < nlocal; ++iLocal)
 					for (int iOne = 0; iOne < oneLength; ++iOne)
-						apply_force( local[iLocal], oneLocal[iOne], &dmin, &davg, &navg );
+						apply_force( local[iLocal], oneLocal[iOne] );
 
 				MPI_Send(&oneLength, 1, MPI_INT, rightNeighbor, 0, MPI_COMM_WORLD);
 				MPI_Send(oneLocal, oneLength, PARTICLE, rightNeighbor, 0, MPI_COMM_WORLD);
@@ -146,7 +144,7 @@ int main( int argc, char **argv )
 				// MPI_Barrier(MPI_COMM_WORLD);
 				for (int iLocal = 0; iLocal < nlocal; ++iLocal)
 					for (int iOne = 0; iOne < oneLength; ++iOne)
-						apply_force( local[iLocal], oneLocal[iOne], &dmin, &davg, &navg );
+						apply_force( local[iLocal], oneLocal[iOne] );
 			// rank is odd
 			} else {
 				MPI_Recv(&oneLength, 1, MPI_INT, leftNeighbor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -161,7 +159,7 @@ int main( int argc, char **argv )
 				}
 				for (int iLocal = 0; iLocal < nlocal; ++iLocal)
 					for (int iOne = 0; iOne < oneLength; ++iOne)
-						apply_force( local[iLocal], oneLocal[iOne], &dmin, &davg, &navg );
+						apply_force( local[iLocal], oneLocal[iOne] );
 
 				MPI_Recv(&twoLength, 1, MPI_INT, leftNeighbor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 				MPI_Recv(twoLocal, twoLength, PARTICLE, leftNeighbor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -171,7 +169,7 @@ int main( int argc, char **argv )
 				// MPI_Barrier(MPI_COMM_WORLD);
 				for (int iLocal = 0; iLocal < nlocal; ++iLocal)
 					for (int iTwo = 0; iTwo < twoLength; ++iTwo)
-						apply_force( local[iLocal], twoLocal[iTwo], &dmin, &davg, &navg );
+						apply_force( local[iLocal], twoLocal[iTwo] );
 			}
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
@@ -235,21 +233,21 @@ int main( int argc, char **argv )
 	  printf("\n");
 
 	  // Printing summary data
-	  if( fsum)
-		fprintf(fsum,"%d %d %g\n",n,n_proc,simulation_time);
+	  // if( fsum)
+		// fprintf(fsum,"%d %d %g\n",n,n_proc,simulation_time);
 	}
 
 	//	release resources
-	if ( fsum )
-		fclose( fsum );
+	// if ( fsum )
+		// fclose( fsum );
 	free( partition_offsets );
 	free( partition_sizes );
 	free( local );
 	free( oneLocal );
 	free( twoLocal );
 	free( particles );
-	if( fsave )
-		fclose( fsave );
+	// if( fsave )
+		// fclose( fsave );
 
 	MPI_Finalize( );
 

@@ -14,7 +14,7 @@ double size;
 #define density	0.0005
 #define mass	1.0
 #define dt		0.0005
-#define size	1.0
+// #define size	1.0
 
 //	timer
 double read_timer( )
@@ -29,6 +29,12 @@ double read_timer( )
 	}
 	gettimeofday( &end, NULL );
 	return (end.tv_sec - start.tv_sec) + 1.0e-6 * (end.tv_usec - start.tv_usec);
+}
+
+//  keep density constant
+void set_size( int n ) 
+{
+    size = sqrt( density * n );
 }
 
 //	Initialize the particle positions and velocities
