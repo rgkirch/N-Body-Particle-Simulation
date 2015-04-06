@@ -13,13 +13,12 @@ using namespace std;
 #define WINDOW_HEIGHT 600
 
 
-void create_window(sf::RenderWindow* w)
+void create_window(sf::RenderWindow &window)
 {
 	// create window
-	sf::RenderWindow window( sf::VideoMode( WINDOW_WIDTH, WINDOW_HEIGHT ), "SFML Visualizer!" );
-	window.setVerticalSyncEnabled( true );
-	window.setFramerateLimit( 15 );
-	w = &window;
+	window.create( sf::VideoMode( WINDOW_WIDTH, WINDOW_HEIGHT ), "SFML Visualizer!" );
+	// window.setVerticalSyncEnabled( true );
+	// window.setFramerateLimit( 15 );
 }
 
 int main( int argc, char **argv )
@@ -51,9 +50,9 @@ int main( int argc, char **argv )
 	particle_t *local = (particle_t*) malloc( nlocal * sizeof(particle_t) );
 	//	initialize
 	double size = set_size( n );
-	cout << "size:" << size << endl;
+	// cout << "size:" << size << endl;
 	//	every process creates a pointer to a renderwindow
-	sf::RenderWindow* window;
+	sf::RenderWindow window;
 	//	define a circle
 	sf::CircleShape circle(4, 8);
 	circle.setFillColor( sf::Color::Black );
@@ -68,20 +67,21 @@ int main( int argc, char **argv )
 	MPI_Scatterv( particles, partition_sizes, partition_offsets, PARTICLE, local, nlocal, PARTICLE, 0, MPI_COMM_WORLD );
 	//	simulate a number of time steps
 	double simulation_time = read_timer( );
-	for( int step = 0; step < NSTEPS; step++ )
+	// for( int step = 0; step < NSTEPS; step++ )
+	while( 1 )
 	{
 		//	collect all global data locally
 		MPI_Allgatherv( local, nlocal, PARTICLE, particles, partition_sizes, partition_offsets, PARTICLE, MPI_COMM_WORLD );
 		if( rank == 0 )
 		{
-			window->clear( sf::Color::White );
+			window.clear( sf::Color::White );
 			sf::CircleShape temp = circle;
 			for( int i = 0; i < n; ++i )
 			{
 				temp.setPosition( particles[i].x / size * WINDOW_WIDTH, particles[i].y / size * WINDOW_HEIGHT );
-				window->draw( temp );
+				window.draw( temp );
 			}
-			window->display();
+			window.display();
 		}
 		//	compute all forces
 		for( int i = 0; i < nlocal; i++ )
