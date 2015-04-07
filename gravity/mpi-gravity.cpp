@@ -1,14 +1,16 @@
-#include <iostream>
-#include <stdio.h>
-#include <vector>
-#include <mpi.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include <assert.h>
-#include <time.h>
-#include <sys/time.h>
+// has RAND_MAX
+#include <cstdlib>
+#include <iostream>
 #include <math.h>
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/time.h>
+#include <time.h>
+#include <vector>
+
 #include <SFML/Graphics.hpp>
 
 using namespace std;
@@ -21,8 +23,9 @@ using namespace std;
 #define density	0.0005
 #define mass	1.0
 #define dt		0.0005
+#define size 1.0
 
-double size = 0.0;
+// double size = 0.0;
 
 inline int min( int a, int b ) { return a < b ? a : b; }
 inline int max( int a, int b ) { return a > b ? a : b; }
@@ -67,21 +70,27 @@ int read_int( int argc, char **argv, const char *option, int default_value )
 	return default_value;
 }
 
-double set_size( int n ) 
+/*
+void set_size( int n ) 
 {
     size = sqrt( density * n );
-	return size;
 }
+*/
 
 void init_particles( int n, particle_t *p )
 {
-	srand( time( NULL ) );
 	for( int i = 0; i < n; i++ ) 
 	{
-		p[i].vx = rand()*10;
-		p[i].vy = rand()*10;
-		p[i].x = rand()*size;
-		p[i].y = rand()*size;
+		p[i].x = 0.0;
+		p[i].y = 0.0;
+		p[i].vx = 0.0;
+		p[i].vy = 0.0;
+		p[i].ax = 0.0;
+		p[i].ay = 0.0;
+		// p[i].vx = rand()*1;
+		// p[i].vy = rand()*1;
+		p[i].x = rand() / (double)RAND_MAX;
+		p[i].y = rand() / (double)RAND_MAX;
 	}
 }
 
@@ -112,8 +121,8 @@ void create_window(sf::RenderWindow &window)
 {
 	// create window
 	window.create( sf::VideoMode( WINDOW_WIDTH, WINDOW_HEIGHT ), "SFML Visualizer!" );
-	window.setVerticalSyncEnabled( true );
-	window.setFramerateLimit( 15 );
+	// window.setVerticalSyncEnabled( true );
+	// window.setFramerateLimit( 15 );
 }
 
 int main( int argc, char **argv )
@@ -144,8 +153,8 @@ int main( int argc, char **argv )
 	int nlocal = partition_sizes[rank];
 	particle_t *local = (particle_t*) malloc( nlocal * sizeof(particle_t) );
 	//	initialize
-	size = set_size( n );
-	// cout << "size:" << size << endl;
+	// size is a global
+	// set_size( n );
 	//	every process creates a pointer to a renderwindow
 	sf::RenderWindow window;
 	//	define a circle
@@ -153,6 +162,7 @@ int main( int argc, char **argv )
 	circle.setFillColor( sf::Color::Black );
 	if( rank == 0 )
 	{
+		srand( time( NULL ) );
 		//	init the particles
 		init_particles( n, particles );
 		//	only one process creates a window
@@ -162,8 +172,8 @@ int main( int argc, char **argv )
 	MPI_Scatterv( particles, partition_sizes, partition_offsets, PARTICLE, local, nlocal, PARTICLE, 0, MPI_COMM_WORLD );
 	//	simulate a number of time steps
 	double simulation_time = read_timer( );
-	for( int step = 0; step < NSTEPS; step++ )
-	// while( 1 )
+	// for( int step = 0; step < NSTEPS; step++ )
+	while( 1 )
 	{
 		//	collect all global data locally
 		MPI_Allgatherv( local, nlocal, PARTICLE, particles, partition_sizes, partition_offsets, PARTICLE, MPI_COMM_WORLD );
@@ -174,6 +184,8 @@ int main( int argc, char **argv )
 			for( int i = 0; i < n; ++i )
 			{
 				temp.setPosition( particles[i].x / size * WINDOW_WIDTH, particles[i].y / size * WINDOW_HEIGHT );
+				// cout << particles[i].x << " " << particles[i].y << endl;
+				// temp.setPosition( .5 * WINDOW_WIDTH, .5 * WINDOW_HEIGHT );
 				window.draw( temp );
 			}
 			window.display();
