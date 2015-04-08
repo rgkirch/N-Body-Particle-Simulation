@@ -1,40 +1,36 @@
 // Richard Kirchofer
-#include <assert.h>
+
 // has RAND_MAX
 #include <cstdlib>
-#include <cmath>
+// c++ input output
 #include <iostream>
+// atan2, sin, cos, fmod
 #include <math.h>
+// everything
 #include <mpi.h>
+// i like printf
 #include <stdio.h>
-#include <stdlib.h>
+// strcmp
 #include <string.h>
-#include <string>
 #include <sys/time.h>
 #include <time.h>
-#include <vector>
 
 #include <SFML/Graphics.hpp>
 
 using namespace std;
 
-#define WINDOW_WIDTH 1920
-#define WINDOW_HEIGHT 1080
+#define WINDOW_WIDTH 1400
+#define WINDOW_HEIGHT 1000
 #define NSTEPS 500
-#define SAVEFREQ 1
 
-#define massToDrawRadius	1.0
-#define defaultRadius	4.0
-#define cutoff	0.00001
-#define density	0.0005
-#define iniVel	10
-#define velFric	0.99
-// #define dt		0.0005
-#define dt		0.0005
-// deprecated
-#define size	1.0
-
-// double size = 0.0;
+float massToDrawRadius;
+float defaultRadius;
+float initialVelocity;
+float velFric;
+// #define timescale		0.0005
+float timescale;
+float cutoff;
+int n;
 
 inline int min( int a, int b ) { return a < b ? a : b; }
 inline int max( int a, int b ) { return a > b ? a : b; }
@@ -101,8 +97,8 @@ void init_particles( int n, particle_t *p )
 		p[i].ay = 0.0;
 		p[i].mass = 1.0;
 		p[i].displaySize = p[i].mass * 4.0;
-		p[i].vx = rand() / (double)RAND_MAX * iniVel;
-		p[i].vy = rand() / (double)RAND_MAX * iniVel;
+		p[i].vx = rand() / (double)RAND_MAX * initialVelocity;
+		p[i].vy = rand() / (double)RAND_MAX * initialVelocity;
 		p[i].x = rand() / (double)RAND_MAX;
 		p[i].y = rand() / (double)RAND_MAX;
 		p[i].color = sf::Color::Black;
@@ -117,13 +113,6 @@ void apply_force( particle_t &particle, particle_t &neighbor)
 	if( r2 == 0 ) {
 		return;
 	} else if( r2 < cutoff ) {
-		/*
-		double r = sqrt( r2 );
-		double coef = ( 1 - cutoff / r ) / r2 / mass;
-		particle.ax += coef * dx;
-		particle.ay += coef * dy;
-		*/
-
 		//double xdiff = (double)abs(particle.vx - neighbor.vx);
 		//double ydiff = (double)abs(particle.vy - neighbor.vy);
 		double xsum = (particle.vx + neighbor.vx);
@@ -136,19 +125,19 @@ void apply_force( particle_t &particle, particle_t &neighbor)
 		double force = 0.0;
 		force = 1/r2;
 		double direction = atan2(dx, dy);
-		particle.vx += sin(direction)*dt;
-		particle.vy += cos(direction)*dt;
+		particle.vx += sin(direction)*timescale;
+		particle.vy += cos(direction)*timescale;
 	}
 }
 
 void move( particle_t &p )
 {
-	p.vx += p.ax * dt;
-	p.vy += p.ay * dt;
+	p.vx += p.ax * timescale;
+	p.vy += p.ay * timescale;
 	p.vx *= velFric;
 	p.vy *= velFric;
-	p.x  += p.vx * dt;
-	p.y  += p.vy * dt;
+	p.x  += p.vx * timescale;
+	p.y  += p.vy * timescale;
 }
 
 void create_window(sf::RenderWindow &window)
@@ -161,7 +150,21 @@ void create_window(sf::RenderWindow &window)
 
 int main( int argc, char **argv )
 {	 
-	int n = read_int( argc, argv, "-n", 1000 );
+	n = read_int( argc, argv, "-n", 1000 );
+	cutoff = read_int( argc, argv, "--cutoff", 0.00001 );
+	timescale = read_int( argc, argv, "--timescale", 0.0005 );
+	velFric = read_int( argc, argv, "--velocityscale", 0.99 );
+	massToDrawRadius = read_int(argc, argv, "--masstoradius", 1.0);
+	defaultRadius = read_int(argc, argv, "--defaultradius", 4.0);
+	initialVelocity = read_int(argc, argv, "--initialvelocity", 10);
+	/*
+	if( find_option( "-h" ) )
+	{
+		cout << "-h prints this help" << endl;
+		cout << "-n number of particles in simulation" << endl;
+	}
+	*/
+
 	//	set up MPI
 	int n_proc, rank;
 	MPI_Init( &argc, &argv );
@@ -177,16 +180,18 @@ int main( int argc, char **argv )
 	//	set up the data partitioning across processors
 	//	define the offsets
 	int particle_per_proc = (n + n_proc - 1) / n_proc;
-	int *partition_offsets = (int*) malloc( (n_proc+1) * sizeof(int) );
+	// int *partition_offsets = (int*) malloc( (n_proc+1) * sizeof(int) );
+	int* partition_offsets = new int[n_proc+1];
 	for( int i = 0; i < n_proc+1; i++ )
 		partition_offsets[i] = min( i * particle_per_proc, n );
 	//	define the sizes
-	int *partition_sizes = (int*) malloc( n_proc * sizeof(int) );
+	// int *partition_sizes = (int*) malloc( n_proc * sizeof(int) );
+	int* partition_sizes = new int[n_proc];
 	for( int i = 0; i < n_proc; i++ )
 		partition_sizes[i] = partition_offsets[i+1] - partition_offsets[i];
 	//	allocate storage for local partition
 	int nlocal = partition_sizes[rank];
-	particle_t *local = (particle_t*) malloc( nlocal * sizeof(particle_t) );
+	particle_t* local = new particle_t[nlocal];
 	//	initialize
 	// size is a global
 	// set_size( n );
@@ -229,7 +234,7 @@ int main( int argc, char **argv )
 				circle.setFillColor(particles[i].color);
 				// fmod is floating point modulus
 				// don't do modulus TODO
-				circle.setPosition( fmod( particles[i].x / size * WINDOW_WIDTH, WINDOW_WIDTH), fmod(particles[i].y / size * WINDOW_HEIGHT, WINDOW_HEIGHT ) );
+				circle.setPosition( fmod( particles[i].x * WINDOW_WIDTH, WINDOW_WIDTH), fmod(particles[i].y * WINDOW_HEIGHT, WINDOW_HEIGHT ) );
 				// cout << particles[i].x << " " << particles[i].y << endl;
 				// circle.setPosition( .5 * WINDOW_WIDTH, .5 * WINDOW_HEIGHT );
 				window.draw( circle );
@@ -255,9 +260,12 @@ int main( int argc, char **argv )
 	}
   
 	//	release resources
-	free( partition_offsets );
+	// free( partition_offsets );
+	delete partition_offsets;
 	free( partition_sizes );
-	free( local );
+	delete partition_sizes;
+	// free( local );
+	delete local;
 	// free( particles );
 	delete particles;
 	//	end mpi portion
