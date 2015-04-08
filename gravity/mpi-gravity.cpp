@@ -157,6 +157,19 @@ int main( int argc, char **argv )
 				// circle.setPosition( .5 * WINDOW_WIDTH, .5 * WINDOW_HEIGHT );
 				window.draw( circle );
 			}
+			for( int i = 0; i < nlocal; ++i )
+			{
+				// scale the default radius by the mass
+				// circle.setRadius(defaultRadius * massToDrawRadius * particles[i].mass);
+				circle.setRadius(local[i].displaySize);
+				circle.setFillColor(sf::Color::Red);
+				// fmod is floating point modulus
+				// don't do modulus TODO
+				circle.setPosition( fmod( local[i].x * WINDOW_WIDTH, WINDOW_WIDTH), fmod(local[i].y * WINDOW_HEIGHT, WINDOW_HEIGHT ) );
+				// cout << particles[i].x << " " << particles[i].y << endl;
+				// circle.setPosition( .5 * WINDOW_WIDTH, .5 * WINDOW_HEIGHT );
+				window.draw( circle );
+			}
 			/*
 			sf::Image frame = window.capture();
 			ostringstream stream;
@@ -176,7 +189,10 @@ int main( int argc, char **argv )
 	 
 		//	move particles
 		for( int i = 0; i < nlocal; i++ )
+		{
 			move( local[i] );
+			cout << "move" << i << endl;
+		}
 	}
 	simulation_time = read_timer( ) - simulation_time;
   
