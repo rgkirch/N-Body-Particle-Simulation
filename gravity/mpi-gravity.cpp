@@ -25,7 +25,6 @@ using namespace std;
 // #define WINDOW_HEIGHT 1080
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
-#define NSTEPS 50
 
 float massToDrawRadius;
 float defaultRadius;
@@ -36,6 +35,7 @@ float cutoff;
 int n;
 int n_proc;
 int rank;
+int nSteps;
 
 inline int min( int a, int b ) { return a < b ? a : b; }
 inline int max( int a, int b ) { return a > b ? a : b; }
@@ -77,6 +77,7 @@ int main( int argc, char **argv )
 	massToDrawRadius = read_int(argc, argv, "--masstoradius", 1.0);
 	defaultRadius = read_int(argc, argv, "--defaultradius", 4.0);
 	initialVelocity = read_int(argc, argv, "--initialvelocity", 10);
+	nSteps = read_int(argc, argv, "--nsteps", 50);
 	/*
 	if( find_option( "-h" ) )
 	{
@@ -135,7 +136,7 @@ int main( int argc, char **argv )
 	}
 	//	simulate a number of time steps
 	double simulation_time = read_timer( );
-	for( int step = 0; step < NSTEPS; step++ )
+	for( int step = 0; step < nSteps; step++ )
 	// while( 1 )
 	{
 		//	collect all global data locally
