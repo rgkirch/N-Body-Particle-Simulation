@@ -6,6 +6,8 @@
 #include <iostream>
 #include <math.h>
 #include <mpi.h>
+// ostringstream for converting int to string for frame_name
+#include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,8 +20,10 @@
 
 using namespace std;
 
-#define WINDOW_WIDTH 1920
-#define WINDOW_HEIGHT 1080
+// #define WINDOW_WIDTH 1920
+// #define WINDOW_HEIGHT 1080
+#define WINDOW_WIDTH 800
+#define WINDOW_HEIGHT 600
 #define NSTEPS 500
 #define SAVEFREQ 1
 
@@ -213,8 +217,8 @@ int main( int argc, char **argv )
 	}
 	//	simulate a number of time steps
 	double simulation_time = read_timer( );
-	// for( int step = 0; step < NSTEPS; step++ )
-	while( 1 )
+	for( int step = 0; step < NSTEPS; step++ )
+	// while( 1 )
 	{
 		//	collect all global data locally
 		MPI_Allgatherv( local, nlocal, PARTICLE, particles, partition_sizes, partition_offsets, PARTICLE, MPI_COMM_WORLD );
@@ -234,6 +238,11 @@ int main( int argc, char **argv )
 				// circle.setPosition( .5 * WINDOW_WIDTH, .5 * WINDOW_HEIGHT );
 				window.draw( circle );
 			}
+			sf::Image frame = window.capture();
+			ostringstream stream;
+			stream << "frame" << step << ".png";
+			string frame_name = stream.str();
+			frame.saveToFile(frame_name);
 			window.display();
 		}
 		//	compute all forces
