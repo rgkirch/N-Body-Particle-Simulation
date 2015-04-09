@@ -75,7 +75,7 @@ int main( int argc, char **argv )
 	char* arr[2];
 	arr[0] = one;
 	arr[1] = two;
-	for( int i = 1; i < 2; ++i )
+	for( int i = 0; i < 2; ++i )
 	{
 		cout << arr[i] << endl;
 		// if( strcmp( argv[i], option ) == 0 )
