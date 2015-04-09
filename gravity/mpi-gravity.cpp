@@ -70,6 +70,16 @@ void create_window(sf::RenderWindow &window)
 
 int main( int argc, char **argv )
 {	 
+	char one[] = "Hello";
+	char two[] = "World";
+	char* arr[2];
+	arr[0] = one;
+	arr[1] = two;
+	for( int i = 1; i < 2; ++i )
+	{
+		cout << arr[i] << endl;
+		// if( strcmp( argv[i], option ) == 0 )
+	}
 	n = read_int( argc, argv, "-n", 1000 );
 	cutoff = read_int( argc, argv, "--cutoff", 0.00001 );
 	timescale = read_int( argc, argv, "--timescale", 0.0005 );
@@ -78,6 +88,16 @@ int main( int argc, char **argv )
 	defaultRadius = read_int(argc, argv, "--defaultradius", 4.0);
 	initialVelocity = read_int(argc, argv, "--initialvelocity", 10);
 	nSteps = read_int(argc, argv, "--nsteps", 50);
+	cout << "n " << n << endl;
+	cout << "cutoff " << cutoff << endl;
+	cout << "timescale " << timescale << endl;
+	cout << "velFric " << velFric << endl;
+	cout << "massToDrawRadius " << massToDrawRadius << endl;
+	cout << "defaultRadius " << defaultRadius << endl;
+	cout << "initialVelocity " << initialVelocity << endl;
+	cout << "nSteps " << nSteps << endl;
+	cout << endl;
+
 	/*
 	if( find_option( "-h" ) )
 	{
@@ -191,7 +211,6 @@ int main( int argc, char **argv )
 		for( int i = 0; i < nlocal; i++ )
 		{
 			move( local[i] );
-			cout << "move" << i << endl;
 		}
 	}
 	simulation_time = read_timer( ) - simulation_time;
