@@ -28,16 +28,6 @@ using namespace std;
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
 
-float massToDrawRadius;
-float defaultRadius;
-float initialVelocity;
-float velFric;
-float timescale;
-float cutoff;
-int n;
-int n_proc;
-int rank;
-int nSteps;
 
 inline int min( int a, int b ) { return a < b ? a : b; }
 inline int max( int a, int b ) { return a > b ? a : b; }
@@ -72,6 +62,16 @@ void create_window(sf::RenderWindow &window)
 
 int main( int argc, char **argv )
 {	 
+	float massToDrawRadius;
+	float defaultRadius;
+	float initialVelocity;
+	float velFric;
+	float timescale;
+	float cutoff;
+	int n;
+	int n_proc;
+	int rank;
+	int nSteps;
 	vector< string > options;
 	options.push_back("-n");
 	options.push_back("--cutoff");
@@ -81,26 +81,52 @@ int main( int argc, char **argv )
 	options.push_back("--defaultradius");
 	options.push_back("--initialvelocity");
 	options.push_back("--nsteps");
-
-
-	for( int v = 1; v < argc; ++v )
+	vector< float > variables;
+	variables.push_back(  );
+	variables.push_back(  );
+	variables.push_back(  );
+	variables.push_back(  );
+	variables.push_back(  );
+	variables.push_back(  );
+	variables.push_back(  );
+	variables.push_back(  );
+	/*
+	for( int o = 1; o < argc; ++o )
 	{
-		for( int o = 0; o < options.size(); ++o )
-		{
-			if( strcmp( argv[v], options[o]) == 0 )
-			{
-				
-			}
-		}
+		if( strcmp( argv[o], "-n" ) == 0 )
+			n = atoi(argv[o+1]);
+		else
+			n = 500;
+		if( strcmp( argv[o], "--cutoff" ) == 0 )
+			cutoff = argv[o+1];
+		else
+			cutoff = 0.00001;
+		if( strcmp( argv[o], "--timescale" ) == 0 )
+			timescale = argv[o+1];
+		else
+			timescale = 0.0005;
+		if( strcmp( argv[o], "--velocityscale" ) == 0 )
+			velocityscale = argv[o+1];
+		else
+			velocityscale = 0.99;
+		if( strcmp( argv[o], "--masstoradius" ) == 0 )
+			masstoradius = argv[o+1];
+		else
+			masstoradius = 1.0;
+		if( strcmp( argv[o], "--defaultradius" ) == 0 )
+			defaultradius = argv[o+1];
+		else
+			defaultradius = 4.0;
+		if( strcmp( argv[o], "--initialvelocity" ) == 0 )
+			initialvelocity = argv[o+1];
+		else
+			initialvelocity = 10;
+		if( strcmp( argv[o], "--nsteps" ) == 0 )
+			nsteps = argv[o+1];
+		else
+			nSteps = 50;
 	}
-	n = read_int( argc, argv, "-n", 1000 );
-	cutoff = read_int( argc, argv, "--cutoff", 0.00001 );
-	timescale = read_int( argc, argv, "--timescale", 0.0005 );
-	velFric = read_int( argc, argv, "--velocityscale", 0.99 );
-	massToDrawRadius = read_int(argc, argv, "--masstoradius", 1.0);
-	defaultRadius = read_int(argc, argv, "--defaultradius", 4.0);
-	initialVelocity = read_int(argc, argv, "--initialvelocity", 10);
-	nSteps = read_int(argc, argv, "--nsteps", 50);
+	*/
 	cout << "n " << n << endl;
 	cout << "cutoff " << cutoff << endl;
 	cout << "timescale " << timescale << endl;
