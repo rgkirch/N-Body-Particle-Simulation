@@ -189,16 +189,17 @@ int main( int argc, char **argv )
 	MPI_Type_commit( &PARTICLE );
 	//	set up the data partitioning across processors
 	//	define the offsets
-	int particle_per_proc = (n + n_proc - 1) / n_proc;
+	int particle_per_proc = n / n_proc;
 	// int *partition_offsets = (int*) malloc( (n_proc+1) * sizeof(int) );
-	int* partition_offsets = new int[n_proc+1];
-	for( int i = 0; i < n_proc+1; i++ )
-		partition_offsets[i] = min( i * particle_per_proc, n );
+	int* partition_offsets = new int[n_proc];
+	for( int i = 0; i < n_proc; ++i )
+		partition_offsets[i] = particle_per_proc * i;
 	//	define the sizes
 	// int *partition_sizes = (int*) malloc( n_proc * sizeof(int) );
 	int* partition_sizes = new int[n_proc];
-	for( int i = 0; i < n_proc; i++ )
-		partition_sizes[i] = partition_offsets[i+1] - partition_offsets[i];
+	for( int i = 0; i < n_proc; ++i )
+		partition_sizes[i] = particle_per_proc;
+	partition_sizes[n_proc-1] = n / n_proc + n % n_proc;
 	//	allocate storage for local partition
 	int nlocal = partition_sizes[rank];
 	particle_t* local = new particle_t[nlocal];
@@ -213,24 +214,31 @@ int main( int argc, char **argv )
 		srand( time( NULL ) );
 		//	init the particles
 		init_particles( n, particles, initialVelocity );
+		for( int i = 0; i < n; ++i )
+		{
+			particles[i].color = sf::Color::Blue;
+		}
 		//	only one process creates a window
 		// function call defined above
 		create_window(window);
 	}
 	//	distribute the particles
 	MPI_Scatterv( particles, partition_sizes, partition_offsets, PARTICLE, local, nlocal, PARTICLE, 0, MPI_COMM_WORLD );
-	// color proc 0 particles blue
-	for( int i = 0; i < nlocal; ++i)
-	{
-		local[i].color = sf::Color::Blue;
-	}
 	//	simulate a number of time steps
 	double simulation_time = read_timer( );
 	for( int step = 0; step < nSteps; step++ )
 	// while( 1 )
 	{
+		if( step == 0)
+		{
+			for( int i = 0; i < nlocal; ++i )
+			{
+				local[i].color = sf::Color::Red;
+			}
+		}
 		//	collect all global data locally
 		MPI_Allgatherv( local, nlocal, PARTICLE, particles, partition_sizes, partition_offsets, PARTICLE, MPI_COMM_WORLD );
+		// cout << "P " << partition_offsets[n_proc-1] << endl;
 		if( rank == 0 )
 		{
 			window.clear( sf::Color::White );
@@ -245,19 +253,6 @@ int main( int argc, char **argv )
 				// fmod is floating point modulus
 				// don't do modulus TODO
 				circle.setPosition( fmod( particles[i].x * WINDOW_WIDTH, WINDOW_WIDTH), fmod(particles[i].y * WINDOW_HEIGHT, WINDOW_HEIGHT ) );
-				// cout << particles[i].x << " " << particles[i].y << endl;
-				// circle.setPosition( .5 * WINDOW_WIDTH, .5 * WINDOW_HEIGHT );
-				window.draw( circle );
-			}
-			for( int i = 0; i < nlocal; ++i )
-			{
-				// scale the default radius by the mass
-				// circle.setRadius(defaultRadius * massToDrawRadius * particles[i].mass);
-				circle.setRadius(local[i].mass);
-				circle.setFillColor(sf::Color::Red);
-				// fmod is floating point modulus
-				// don't do modulus TODO
-				circle.setPosition( fmod( local[i].x * WINDOW_WIDTH, WINDOW_WIDTH), fmod(local[i].y * WINDOW_HEIGHT, WINDOW_HEIGHT ) );
 				// cout << particles[i].x << " " << particles[i].y << endl;
 				// circle.setPosition( .5 * WINDOW_WIDTH, .5 * WINDOW_HEIGHT );
 				window.draw( circle );
