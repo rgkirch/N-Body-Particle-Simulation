@@ -16,6 +16,8 @@
 #include <string.h>
 #include <sys/time.h>
 #include <time.h>
+// have a list of the available options
+#include <vector>
 
 #include <SFML/Graphics.hpp>
 
@@ -70,15 +72,26 @@ void create_window(sf::RenderWindow &window)
 
 int main( int argc, char **argv )
 {	 
-	char one[] = "Hello";
-	char two[] = "World";
-	char* arr[2];
-	arr[0] = one;
-	arr[1] = two;
-	for( int i = 0; i < 2; ++i )
+	vector< string > options;
+	options.push_back("-n");
+	options.push_back("--cutoff");
+	options.push_back("--timescale");
+	options.push_back("--velocityscale");
+	options.push_back("--masstoradius");
+	options.push_back("--defaultradius");
+	options.push_back("--initialvelocity");
+	options.push_back("--nsteps");
+
+
+	for( int v = 1; v < argc; ++v )
 	{
-		cout << arr[i] << endl;
-		// if( strcmp( argv[i], option ) == 0 )
+		for( int o = 0; o < options.size(); ++o )
+		{
+			if( strcmp( argv[v], options[o]) == 0 )
+			{
+				
+			}
+		}
 	}
 	n = read_int( argc, argv, "-n", 1000 );
 	cutoff = read_int( argc, argv, "--cutoff", 0.00001 );
