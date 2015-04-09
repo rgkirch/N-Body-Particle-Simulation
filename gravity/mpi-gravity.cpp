@@ -1,10 +1,12 @@
 // Richard Kirchofer
 
+// for pi as a constant on older systems
+#define _USE_MATH_DEFINES
 // has RAND_MAX
 #include <cstdlib>
 // c++ input output
 #include <iostream>
-// atan2, sin, cos, fmod
+// atan2, sin, cos, fmod, pi
 #include <math.h>
 // everything
 #include <mpi.h>
@@ -41,16 +43,36 @@ typedef struct
 	double ax;
 	double ay;
 	double mass;
-	double displaySize;
 	sf::Color color;
 } particle_t;
 
 double read_timer();
 int find_option( int argc, char **argv, const char *option );
 int read_int( int argc, char **argv, const char *option, int default_value );
-void init_particles( int n, particle_t* p );
-void apply_force( particle_t &particle, particle_t &neighbor);
-void move( particle_t &p );
+void init_particles( int n, particle_t* p, int initialVelocity );
+void apply_force( particle_t &particle, particle_t &neighbor, float cutoff, float timescale );
+void move( particle_t &p, float timescale, float velFric );
+int* color_picker( int* value, int rank, int n_proc )
+{
+	if( rank >= n_proc )
+	{
+		cerr << "Invalid rank " << rank << ". Must be less than " << n_proc << endl;
+	}
+	int range = 6*256;
+	int color = range / n_proc * rank;
+	int mod = color % 256;
+	int div = color / 256;
+	value[0] = 255;
+	value[1] = 0;
+	value[2] = 0;
+	/*
+	if( div == 0 )
+	{
+		
+	}
+	*/
+	return value;
+}
 
 void create_window(sf::RenderWindow &window)
 {
@@ -62,16 +84,23 @@ void create_window(sf::RenderWindow &window)
 
 int main( int argc, char **argv )
 {	 
-	float massToDrawRadius;
-	float defaultRadius;
-	float initialVelocity;
-	float velFric;
-	float timescale;
-	float cutoff;
-	int n;
+	// initial velocity random between 0 and this
+	float initialVelocity = 10.0;
+	// velocity drops to this fraction of itself every step
+	float velFric = 0.99;
+	// scale back how far they move, increases the quality of the calculations
+	float timescale = 0.0005;
+	// if they are farther away from eachother than this, no interaction besides attraction
+	float cutoff = 0.00001;
+	// number of particles
+	int n = 500;
+	// number of processors
 	int n_proc;
+	// processor id
 	int rank;
-	int nSteps;
+	// how many steps to simulate
+	int nSteps = 500;
+	/*
 	vector< string > options;
 	options.push_back("-n");
 	options.push_back("--cutoff");
@@ -90,6 +119,7 @@ int main( int argc, char **argv )
 	variables.push_back(  );
 	variables.push_back(  );
 	variables.push_back(  );
+	*/
 	/*
 	for( int o = 1; o < argc; ++o )
 	{
@@ -127,6 +157,7 @@ int main( int argc, char **argv )
 			nSteps = 50;
 	}
 	*/
+	/*
 	cout << "n " << n << endl;
 	cout << "cutoff " << cutoff << endl;
 	cout << "timescale " << timescale << endl;
@@ -136,7 +167,7 @@ int main( int argc, char **argv )
 	cout << "initialVelocity " << initialVelocity << endl;
 	cout << "nSteps " << nSteps << endl;
 	cout << endl;
-
+	*/
 	/*
 	if( find_option( "-h" ) )
 	{
@@ -175,13 +206,13 @@ int main( int argc, char **argv )
 	//	every process creates a pointer to a renderwindow
 	sf::RenderWindow window;
 	// create a circle object, must be visible to all proc
-	sf::CircleShape circle(4, 8);
+	sf::CircleShape circle(1, 8);
 	circle.setFillColor( sf::Color::Black );
 	if( rank == 0 )
 	{
 		srand( time( NULL ) );
 		//	init the particles
-		init_particles( n, particles );
+		init_particles( n, particles, initialVelocity );
 		//	only one process creates a window
 		// function call defined above
 		create_window(window);
@@ -205,9 +236,11 @@ int main( int argc, char **argv )
 			window.clear( sf::Color::White );
 			for( int i = 0; i < n; ++i )
 			{
-				// scale the default radius by the mass
-				// circle.setRadius(defaultRadius * massToDrawRadius * particles[i].mass);
-				circle.setRadius(particles[i].displaySize);
+				// V = 4/3*pi*r**3
+				// pow((3/4)V/M_PI, 1/3)
+				// pow(3.0/4.0/M_PI*particles[i].mass,1.0/3.0)
+				circle.setRadius(particles[i].mass);
+				// circle.setRadius(pow(3.0/4.0/M_PI*particles[i].mass,1.0/3.0));
 				circle.setFillColor(particles[i].color);
 				// fmod is floating point modulus
 				// don't do modulus TODO
@@ -220,7 +253,7 @@ int main( int argc, char **argv )
 			{
 				// scale the default radius by the mass
 				// circle.setRadius(defaultRadius * massToDrawRadius * particles[i].mass);
-				circle.setRadius(local[i].displaySize);
+				circle.setRadius(local[i].mass);
 				circle.setFillColor(sf::Color::Red);
 				// fmod is floating point modulus
 				// don't do modulus TODO
@@ -243,13 +276,13 @@ int main( int argc, char **argv )
 		{
 			local[i].ax = local[i].ay = 0;
 			for (int j = 0; j < n; j++ )
-				apply_force( local[i], particles[j]);
+				apply_force( local[i], particles[j], cutoff, timescale );
 		}
 	 
 		//	move particles
 		for( int i = 0; i < nlocal; i++ )
 		{
-			move( local[i] );
+			move( local[i], timescale, velFric );
 		}
 	}
 	simulation_time = read_timer( ) - simulation_time;
@@ -272,7 +305,7 @@ int main( int argc, char **argv )
 	return 0;
 }
 
-void init_particles( int n, particle_t* p )
+void init_particles( int n, particle_t* p, int initialVelocity )
 {
 	for( int i = 0; i < n; i++ ) 
 	{
@@ -282,8 +315,8 @@ void init_particles( int n, particle_t* p )
 		p[i].vy = 0.0;
 		p[i].ax = 0.0;
 		p[i].ay = 0.0;
-		p[i].mass = 1.0;
-		p[i].displaySize = p[i].mass * 4.0;
+		p[i].mass = 3.0;
+		// p[i].displaySize = p[i].mass * 4.0;
 		p[i].vx = rand() / (double)RAND_MAX * initialVelocity;
 		p[i].vy = rand() / (double)RAND_MAX * initialVelocity;
 		p[i].x = rand() / (double)RAND_MAX;
@@ -292,7 +325,7 @@ void init_particles( int n, particle_t* p )
 	}
 }
 
-void apply_force( particle_t &particle, particle_t &neighbor)
+void apply_force( particle_t &particle, particle_t &neighbor, float cutoff, float timescale)
 {
 	double dx = neighbor.x - particle.x;
 	double dy = neighbor.y - particle.y;
@@ -317,7 +350,7 @@ void apply_force( particle_t &particle, particle_t &neighbor)
 	}
 }
 
-void move( particle_t &p )
+void move( particle_t &p, float timescale, float velFric )
 {
 	p.vx += p.ax * timescale;
 	p.vy += p.ay * timescale;
