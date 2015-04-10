@@ -93,7 +93,7 @@ int main( int argc, char **argv )
 	// if they are farther away from eachother than this, no interaction besides attraction
 	float cutoff = 0.00001;
 	// number of particles
-	int n = 500;
+	int n = 10000;
 	// number of processors
 	int n_proc;
 	// processor id
@@ -257,13 +257,11 @@ int main( int argc, char **argv )
 				// circle.setPosition( .5 * WINDOW_WIDTH, .5 * WINDOW_HEIGHT );
 				window.draw( circle );
 			}
-			/*
 			sf::Image frame = window.capture();
 			ostringstream stream;
 			stream << "frame" << step << ".png";
 			string frame_name = stream.str();
 			frame.saveToFile(frame_name);
-			*/
 			window.display();
 		}
 		//	compute all forces
