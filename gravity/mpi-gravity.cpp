@@ -25,10 +25,10 @@
 
 using namespace std;
 
-// #define WINDOW_WIDTH 1920
-// #define WINDOW_HEIGHT 1080
-#define WINDOW_WIDTH 800
-#define WINDOW_HEIGHT 600
+#define WINDOW_WIDTH 1920
+#define WINDOW_HEIGHT 1080
+//#define WINDOW_WIDTH 800
+//#define WINDOW_HEIGHT 600
 
 
 inline int min( int a, int b ) { return a < b ? a : b; }
@@ -52,6 +52,22 @@ int read_int( int argc, char **argv, const char *option, int default_value );
 void init_particles( int n, particle_t* p, int initialVelocity );
 void apply_force( particle_t &particle, particle_t &neighbor, float cutoff, float timescale );
 void move( particle_t &p, float timescale, float velFric );
+int one_color( int color )
+{
+	int value = 0;
+	int mod = color % 256;
+	int div = color / 256;
+	if( div == 2 ) {
+		// if increasing
+		value = mod;
+	} else if( div == 5 ) {
+		// if decreasing
+		value = 255 - mod;
+	} else if( div == 3 || div == 4 ) {
+		value = 255;
+	} // div == 0 or 1, value = 0; div != 6 because max color = 6*256
+}
+
 int* color_picker( int* value, int rank, int n_proc )
 {
 	if( rank >= n_proc )
@@ -60,17 +76,9 @@ int* color_picker( int* value, int rank, int n_proc )
 	}
 	int range = 6*256;
 	int color = range / n_proc * rank;
-	int mod = color % 256;
-	int div = color / 256;
-	value[0] = 255;
-	value[1] = 0;
-	value[2] = 0;
-	/*
-	if( div == 0 )
-	{
-		
-	}
-	*/
+	value[0] = one_color( color );
+	value[1] = one_color( color + 2 * 256 );
+	value[2] = one_color( color + 4 * 256 );
 	return value;
 }
 
@@ -93,13 +101,19 @@ int main( int argc, char **argv )
 	// if they are farther away from eachother than this, no interaction besides attraction
 	float cutoff = 0.00001;
 	// number of particles
-	int n = 10000;
+	int n = 100;
 	// number of processors
 	int n_proc;
 	// processor id
 	int rank;
 	// how many steps to simulate
 	int nSteps = 500;
+	// should it save the frames or not
+	int save_frames = 0;
+	int rgb_array[3];
+	rgb_array[0] = 0;
+	rgb_array[1] = 0;
+	rgb_array[2] = 0;
 	/*
 	vector< string > options;
 	options.push_back("-n");
@@ -180,6 +194,9 @@ int main( int argc, char **argv )
 	MPI_Init( &argc, &argv );
 	MPI_Comm_size( MPI_COMM_WORLD, &n_proc );
 	MPI_Comm_rank( MPI_COMM_WORLD, &rank );
+
+	//color_picker( rgb_array, rank, n_proc );
+	//printf( "rank: %d, (%d, %d, %d)", rank, rgb_array[0], rgb_array[1], rgb_array[2] );
 	//	allocate memory for particles
 	// particle_t *particles = (particle_t*) malloc( n * sizeof(particle_t) );
 	particle_t *particles = new particle_t[n];
@@ -257,11 +274,14 @@ int main( int argc, char **argv )
 				// circle.setPosition( .5 * WINDOW_WIDTH, .5 * WINDOW_HEIGHT );
 				window.draw( circle );
 			}
-			sf::Image frame = window.capture();
-			ostringstream stream;
-			stream << "frame" << step << ".png";
-			string frame_name = stream.str();
-			frame.saveToFile(frame_name);
+			if( save_frames )
+			{
+				sf::Image frame = window.capture();
+				ostringstream stream;
+				stream << "frame" << step << ".png";
+				string frame_name = stream.str();
+				frame.saveToFile(frame_name);
+			}
 			window.display();
 		}
 		//	compute all forces
