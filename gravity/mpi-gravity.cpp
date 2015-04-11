@@ -57,6 +57,7 @@ int one_color( int color )
 	int value = 0;
 	int mod = color % 256;
 	int div = color / 256;
+	printf( "%d \n", div );
 	if( div == 2 ) {
 		// if increasing
 		value = mod;
@@ -79,6 +80,7 @@ int* color_picker( int* value, int rank, int n_proc )
 	value[0] = one_color( color );
 	value[1] = one_color( color + 2 * 256 );
 	value[2] = one_color( color + 4 * 256 );
+	printf( "rank: %d, (%d, %d, %d)", rank, value[0], value[1], value[2] );
 	return value;
 }
 
@@ -195,8 +197,8 @@ int main( int argc, char **argv )
 	MPI_Comm_size( MPI_COMM_WORLD, &n_proc );
 	MPI_Comm_rank( MPI_COMM_WORLD, &rank );
 
-	//color_picker( rgb_array, rank, n_proc );
-	//printf( "rank: %d, (%d, %d, %d)", rank, rgb_array[0], rgb_array[1], rgb_array[2] );
+	color_picker( rgb_array, rank, n_proc );
+	// printf( "rank: %d, (%d, %d, %d)", rank, rgb_array[0], rgb_array[1], rgb_array[2] );
 	//	allocate memory for particles
 	// particle_t *particles = (particle_t*) malloc( n * sizeof(particle_t) );
 	particle_t *particles = new particle_t[n];
