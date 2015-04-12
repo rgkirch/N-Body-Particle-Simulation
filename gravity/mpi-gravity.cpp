@@ -25,12 +25,6 @@
 
 using namespace std;
 
-#define WINDOW_WIDTH 1920
-#define WINDOW_HEIGHT 1080
-//#define WINDOW_WIDTH 800
-//#define WINDOW_HEIGHT 600
-
-
 inline int min( int a, int b ) { return a < b ? a : b; }
 inline int max( int a, int b ) { return a > b ? a : b; }
 
@@ -47,8 +41,6 @@ typedef struct
 } particle_t;
 
 double read_timer();
-int find_option( int argc, char **argv, const char *option );
-int read_int( int argc, char **argv, const char *option, int default_value );
 void init_particles( int n, particle_t* p, int initialVelocity );
 void apply_force( particle_t &particle, particle_t &neighbor, float cutoff, float timescale );
 void move( particle_t &p, float timescale, float velFric );
@@ -87,13 +79,12 @@ int* color_picker( int* value, int rank, int n_proc )
 void create_window(sf::RenderWindow &window)
 {
 	// create window
-	window.create( sf::VideoMode( WINDOW_WIDTH, WINDOW_HEIGHT ), "SFML Visualizer!" );
-	// window.setVerticalSyncEnabled( true );
-	// window.setFramerateLimit( 15 );
 }
 
 int main( int argc, char **argv )
 {	 
+	int window_width = 800;
+	int window_height = 600;
 	// initial velocity random between 0 and this
 	float initialVelocity = 10.0;
 	// velocity drops to this fraction of itself every step
@@ -116,81 +107,6 @@ int main( int argc, char **argv )
 	rgb_array[0] = 0;
 	rgb_array[1] = 0;
 	rgb_array[2] = 0;
-	/*
-	vector< string > options;
-	options.push_back("-n");
-	options.push_back("--cutoff");
-	options.push_back("--timescale");
-	options.push_back("--velocityscale");
-	options.push_back("--masstoradius");
-	options.push_back("--defaultradius");
-	options.push_back("--initialvelocity");
-	options.push_back("--nsteps");
-	vector< float > variables;
-	variables.push_back(  );
-	variables.push_back(  );
-	variables.push_back(  );
-	variables.push_back(  );
-	variables.push_back(  );
-	variables.push_back(  );
-	variables.push_back(  );
-	variables.push_back(  );
-	*/
-	/*
-	for( int o = 1; o < argc; ++o )
-	{
-		if( strcmp( argv[o], "-n" ) == 0 )
-			n = atoi(argv[o+1]);
-		else
-			n = 500;
-		if( strcmp( argv[o], "--cutoff" ) == 0 )
-			cutoff = argv[o+1];
-		else
-			cutoff = 0.00001;
-		if( strcmp( argv[o], "--timescale" ) == 0 )
-			timescale = argv[o+1];
-		else
-			timescale = 0.0005;
-		if( strcmp( argv[o], "--velocityscale" ) == 0 )
-			velocityscale = argv[o+1];
-		else
-			velocityscale = 0.99;
-		if( strcmp( argv[o], "--masstoradius" ) == 0 )
-			masstoradius = argv[o+1];
-		else
-			masstoradius = 1.0;
-		if( strcmp( argv[o], "--defaultradius" ) == 0 )
-			defaultradius = argv[o+1];
-		else
-			defaultradius = 4.0;
-		if( strcmp( argv[o], "--initialvelocity" ) == 0 )
-			initialvelocity = argv[o+1];
-		else
-			initialvelocity = 10;
-		if( strcmp( argv[o], "--nsteps" ) == 0 )
-			nsteps = argv[o+1];
-		else
-			nSteps = 50;
-	}
-	*/
-	/*
-	cout << "n " << n << endl;
-	cout << "cutoff " << cutoff << endl;
-	cout << "timescale " << timescale << endl;
-	cout << "velFric " << velFric << endl;
-	cout << "massToDrawRadius " << massToDrawRadius << endl;
-	cout << "defaultRadius " << defaultRadius << endl;
-	cout << "initialVelocity " << initialVelocity << endl;
-	cout << "nSteps " << nSteps << endl;
-	cout << endl;
-	*/
-	/*
-	if( find_option( "-h" ) )
-	{
-		cout << "-h prints this help" << endl;
-		cout << "-n number of particles in simulation" << endl;
-	}
-	*/
 
 	//	set up MPI
 	MPI_Init( &argc, &argv );
@@ -198,9 +114,7 @@ int main( int argc, char **argv )
 	MPI_Comm_rank( MPI_COMM_WORLD, &rank );
 
 	color_picker( rgb_array, rank, n_proc );
-	// printf( "rank: %d, (%d, %d, %d)", rank, rgb_array[0], rgb_array[1], rgb_array[2] );
 	//	allocate memory for particles
-	// particle_t *particles = (particle_t*) malloc( n * sizeof(particle_t) );
 	particle_t *particles = new particle_t[n];
 	//	define a particle
 	MPI_Datatype PARTICLE;
@@ -209,7 +123,6 @@ int main( int argc, char **argv )
 	//	set up the data partitioning across processors
 	//	define the offsets
 	int particle_per_proc = n / n_proc;
-	// int *partition_offsets = (int*) malloc( (n_proc+1) * sizeof(int) );
 	int* partition_offsets = new int[n_proc];
 	for( int i = 0; i < n_proc; ++i )
 		partition_offsets[i] = particle_per_proc * i;
@@ -387,20 +300,4 @@ double read_timer( )
 	}
 	gettimeofday( &end, NULL );
 	return (end.tv_sec - start.tv_sec) + 1.0e-6 * (end.tv_usec - start.tv_usec);
-}
-
-int find_option( int argc, char **argv, const char *option )
-{
-	for( int i = 1; i < argc; i++ )
-		if( strcmp( argv[i], option ) == 0 )
-			return i;
-	return -1;
-}
-
-int read_int( int argc, char **argv, const char *option, int default_value )
-{
-	int iplace = find_option( argc, argv, option );
-	if( iplace >= 0 && iplace < argc-1 )
-		return atoi( argv[iplace+1] );
-	return default_value;
 }
