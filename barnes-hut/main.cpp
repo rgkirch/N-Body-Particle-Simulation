@@ -6,6 +6,9 @@
 #include <iostream>
 // malloc
 #include <stdlib.h>
+#include <SFML/Graphics.hpp>
+
+using namespace std;
 
 // 4 for quadtree, 8 for octree
 #define CHILDREN 4
@@ -118,6 +121,23 @@ void add_point( struct node* head, float dimen, struct node* point )
 	}
 }
 
+void draw( sf::RenderWindow &window, struct node* head, &dot, &box )
+{
+	dot.setRadius( 4 );
+	dot.setFillColor( sf::Color::Black );
+
+	box.setFillColor( sf::Color::Black );
+	box.setPosition();
+	box.setSize( sf::Vector2f( 8, 8 ) );
+
+	if( bar.getPosition().x >= window.getSize().x )
+	{
+		window.clear( sf::Color::White );
+		bar.setPosition(0, 0.5 * window.getSize().y);
+	}
+	window.draw( bar );
+}
+
 int main(int argc, char* argv[])
 {
 	// create a pointer to a node, always keep track of this
@@ -127,6 +147,56 @@ int main(int argc, char* argv[])
 	// test code for adding point
 	struct node* point = (struct node*) malloc( sizeof( struct node ) );
 	nullify_node( point );
+
+	// these values represent the default windowed dimensions (not fullscreen)
+	int window_width = 800;
+	int window_height = 600;
+
+	sf::RenderWindow window;
+	// limit the refresh rate to 15 fps, only works in fullscreen, uses sleeps
+	//window.setFramerateLimit( 15 );
+	window.create( sf::VideoMode( window_width, window_height ), "barnes_hut" );
+	window.clear( sf::Color::White );
+
+	sf::CircleShape dot;
+	sf::RectangleShape box;
+
+	dot.setRadius( 4 );
+	dot.setFillColor( sf::Color::Black );
+
+	box.setSize( sf::Vector2f( 8, 8 ) );
+	box.setFillColor( sf::Color::Black );
+
+	while( window.isOpen() )
+	{
+		sf::Event event;
+		while( window.pollEvent( event ) )
+		{
+			if( event.type == sf::Event::Closed ) {
+				cout << "closing window" << endl;
+				window.close();
+			}
+			if( event.type == sf::Event::LostFocus ) {
+				cout << "focus lost" << endl;
+			}
+			if( event.type == sf::Event::GainedFocus ) {
+				cout << "focus gained" << endl;
+			}
+			if( event.type == sf::Event::MouseMoved) {
+				cout << sf::Mouse::getPosition().x << " " << sf::Mouse::getPosition().y << endl;
+			}
+			if( event.type == sf::Event::MouseButtonPressed) {
+				cout << "mouse button pressed" << endl;
+			}
+			if( event.type == sf::Event::Resized ) {
+				cout << "resized to " << event.size.width << " by " << event.size.height << endl;
+				window.setView( sf::View( sf::FloatRect( 0, 0, event.size.width, event.size.height ) ) );
+				window.clear( sf::Color::White );
+			}
+		}
+		draw( window, head, dot, box );
+		window.display();
+	}
 	return 0;
 }
 
