@@ -27,6 +27,7 @@ struct node
 	float mass;
 	// width of the node (points don't have widths)
 	float dimen;
+	unsigned int quadrant;
 };
 
 // pass in how many child nodes for extensibility
@@ -45,7 +46,8 @@ void nullify_node( struct node* head )
 	head->x_center = 0.0;
 	head->y_center = 0.0;
 	head->mass = 0.0;
-	head->dimen = 0.0;
+	head->dimen = 1.0;
+	head->quadrant = 0;
 }
 
 // if next == nullptr and x&y == null then it is an external node
@@ -55,69 +57,55 @@ void nullify_node( struct node* head )
 // if next != null and x&y != null then it is an internal node
 // an internal node points to four other nodes
 // x&y describe the position of the center of mass of the next nodes
-void add_point( struct node* head, float dimen, struct node* point )
+void add_point( struct node* previous, struct node* current, struct node* point )
 {
 	// we can't yet add in our mass and average against the x,y
 	// what if we already did that to the parent and we just need to make this a point
-	if( head == NULL ) {
+	if( current == NULL ) {
 		// the quadrant is empty, we don't have external nodes, instead it's just null
-		head = point;
+		current = point;
 	} else {
-		// head is not null, then it should have an x,y and mass
+		// current is not null, then it should have an x,y and mass
 		// it could still be a point though, we cant average ourselves just yet
-		if( head->dimen != 0 ) {
+		if( current->dimen != 0 ) {
 			// ok, the width is nonzero, it's not a point
 			// lets just add ourself to the register, "point was here"
-			head->x = ((head->x * head->mass) + (point->x * point->mass)) / (head->mass + point->mass);
-			head->y = ((head->y * head->mass) + (point->y * point->mass)) / (head->mass + point->mass);
-			head->mass += point->mass;
+			current->x = ((current->x * current->mass) + (point->x * point->mass)) / (current->mass + point->mass);
+			current->y = ((current->y * current->mass) + (point->y * point->mass)) / (current->mass + point->mass);
+			current->mass += point->mass;
 			// we include ourself and now we need to recurse on the correct next pointer
 			// compare point's x,y to find where it should go
-			int quadrant = 0;
-			quadrant ^= (point->x >= head->x_center);
-			quadrant ^= (point->y >= head->y_center)<<1;
-			add_point( head->next[quadrant], head->dimen / 2, point );
-			/*
-			// if to the right
-			if( point->x >= x_center ) {
-				// if down, right
-				if( point->y <= y_center ) {
-					add_point( head->next[1], point );
-				} else {
-				// if up, right
-					add_point( head->next[0], point );
-				}
-			} else {
-				// if to the left
-				// if down, left
-				if( point->y <= y_center ) {
-					add_point( head->next[2], point );
-				} else {
-					// if up, left
-					add_point( head->next[3], point );
-				}
-			}
-			*/
+			point->quadrant ^= (point->x >= current->x_center);
+			point->quadrant ^= (point->y >= current->y_center)<<1;
+			add_point( current, current->next[quadrant], point );
 		} else {
 			// if the width is zero then it is a point
 			// create new internal node and move existing point into new node
 			// then move current point into new node
-			struct node* old_point = head;
-			head = (struct node*) malloc( sizeof( struct node ) );
-			nullify_node( head );
-			/*
-			// average position and sum masses for head
-			head->x = ((old_point->x * old_point->mass) + (point->x * point->mass)) / (old_point->mass + point->mass);
-			head->y = ((old_point->y * old_point->mass) + (point->y * point->mass)) / (old_point->mass + point->mass);
-			head->mass = old_point->mass + point->mass;
-			*/
+			struct node* old_point = current;
+			current = (struct node*) malloc( sizeof( struct node ) );
+			nullify_node( current );
 			// new node inherits dimension
-			head->dimen = dimen / 2;
+			if( previous != nullptr ) {
+				current->dimen = previous->dimen / 2.0;
+			}
+			// calculate the new center
+			if( current->quadrant & 1 ) {
+				x_center += current->dimen;
+			} else {
+				x_center -= current->dimen;
+			}
+			if( current->quadrant<<1 & 1 ) {
+				y_center += current->dimen;
+			} else {
+				y_center -= current->dimen;
+			}
 			// recurse on both old_point and point
-			add_point( head, head->dimen, old_point );
-			add_point( head, head->dimen, point );
+			add_point( current, current->dimen, old_point );
+			// TODO - if the x and y are the same, then there is infinite recursion
+			add_point( current, current->dimen, point );
 		}
-	//head = ( struct node* ) malloc( sizeof( struct node ) );
+	//current = ( struct node* ) malloc( sizeof( struct node ) );
 	}
 }
 
@@ -141,12 +129,8 @@ void draw( sf::RenderWindow &window, struct node* head, &dot, &box )
 int main(int argc, char* argv[])
 {
 	// create a pointer to a node, always keep track of this
-	struct node* head;
-	// dimen of head
-	float dimen = 1.0;
-	// test code for adding point
-	struct node* point = (struct node*) malloc( sizeof( struct node ) );
-	nullify_node( point );
+	struct node* head = (struct node*) malloc( sizeof( struct node ) );
+	nullify_node( head );
 
 	// these values represent the default windowed dimensions (not fullscreen)
 	int window_width = 800;
@@ -201,7 +185,7 @@ int main(int argc, char* argv[])
 }
 
 /*
-quadrants
+quadrant
 0	|	1
 ____|____
 	|
