@@ -83,6 +83,7 @@ void add_point( struct node* &previous, struct node* &current, struct node* &poi
 			current->mass += point->mass;
 			// we include ourself and now we need to recurse on the correct next pointer
 			// compare point's x,y to find where it should go
+			point->quadrant = 0;
 			point->quadrant ^= (point->x >= current->x_center);
 			point->quadrant ^= (point->y >= current->y_center)<<1;
 			add_point( current, current->next[point->quadrant], point );
@@ -91,37 +92,35 @@ void add_point( struct node* &previous, struct node* &current, struct node* &poi
 			// if the width is zero then it is a point
 			// create new internal node and move existing point into new node
 			// then move current point into new node
-			// save the place of the current point
-			struct node* old_point = current;
 			// reserve new memory for the internal node
+			struct node* new_node = (struct node*) malloc( sizeof( struct node ) );
 			cout << "addptr create new node" << endl;
-			current = (struct node*) malloc( sizeof( struct node ) );
 			// zero out the new node
-			nullify_node( current );
+			nullify_node( new_node );
 			// get quadrant from the old point
-			current->quadrant = old_point->quadrant;
+			new_node->quadrant = current->quadrant;
 			// new node inherits dimension
 			// nullptr from c++11
 			if( previous != nullptr ) {
-				current->dimen = previous->dimen / 2.0;
+				new_node->dimen = previous->dimen / 2.0;
 			}
 			// if previous is null, then dimen should be 1.0 which is default
 			// calculate the new center
-			if( current->quadrant & 1 ) {
-				current->x_center += current->dimen;
+			if( new_node->quadrant & 1 ) {
+				new_node->x_center += new_node->dimen;
 			} else {
-				current->x_center -= current->dimen;
+				new_node->x_center -= new_node->dimen;
 			}
-			if( current->quadrant<<1 & 1 ) {
-				current->y_center += current->dimen;
+			if( new_node->quadrant>>1 & 1 ) {
+				new_node->y_center += new_node->dimen;
 			} else {
-				current->y_center -= current->dimen;
+				new_node->y_center -= new_node->dimen;
 			}
 			// recurse on both old_point and point
 			// i'll need to recalculate the quadrant of the old point and the new point
-			add_point( previous, current, old_point );
+			add_point( previous, new_node, current);
 			// TODO - if the x and y are the same, then there is infinite recursion
-			add_point( previous, current, point );
+			add_point( previous, new_node, point );
 		}
 	//current = ( struct node* ) malloc( sizeof( struct node ) );
 	}
