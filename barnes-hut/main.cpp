@@ -1,6 +1,10 @@
 // Richard Kirchofer
 // barnes hut n-body simulation in n log n
 
+// has RAND_MAX
+#include <cstdlib>
+// atan2, sin, cos, fmod, pi
+#include <math.h>
 // print
 #include <stdio.h>
 #include <iostream>
@@ -31,23 +35,23 @@ struct node
 };
 
 // pass in how many child nodes for extensibility
-void nullify_node( struct node* head )
+void nullify_node( struct node* current )
 // this function just nulls the values, not an init
 {
 	// nullify_node should not malloc memory because I will already have point structs
 	// I pass in a point struct to add_point and it will get pointed to, no malloc
 	for( int i = 0; i < CHILDREN; ++i)
 	{
-		head->next[i] = NULL;
+		current->next[i] = nullptr;
 	}
-	head->x = 0.0;
-	head->y = 0.0;
-	// head.z = 0.0; // for 3d space
-	head->x_center = 0.0;
-	head->y_center = 0.0;
-	head->mass = 0.0;
-	head->dimen = 1.0;
-	head->quadrant = 0;
+	current->x = 0.0;
+	current->y = 0.0;
+	// current.z = 0.0; // for 3d space
+	current->x_center = 0.0;
+	current->y_center = 0.0;
+	current->mass = 0.0;
+	current->dimen = 1.0;
+	current->quadrant = 0;
 }
 
 // if next == nullptr and x&y == null then it is an external node
@@ -59,15 +63,19 @@ void nullify_node( struct node* head )
 // x&y describe the position of the center of mass of the next nodes
 void add_point( struct node* previous, struct node* current, struct node* point )
 {
+	cout << "add point called" << endl;
 	// we can't yet add in our mass and average against the x,y
 	// what if we already did that to the parent and we just need to make this a point
 	if( current == NULL ) {
+		cout << "addpt current == null" << endl;
 		// the quadrant is empty, we don't have external nodes, instead it's just null
 		current = point;
+		cout << "addpt current address " << current << endl;
 	} else {
 		// current is not null, then it should have an x,y and mass
 		// it could still be a point though, we cant average ourselves just yet
 		if( current->dimen != 0 ) {
+			cout << "addpt dimen != 0" << endl;
 			// ok, the width is nonzero, it's not a point
 			// lets just add ourself to the register, "point was here"
 			current->x = ((current->x * current->mass) + (point->x * point->mass)) / (current->mass + point->mass);
@@ -79,6 +87,7 @@ void add_point( struct node* previous, struct node* current, struct node* point 
 			point->quadrant ^= (point->y >= current->y_center)<<1;
 			add_point( current, current->next[point->quadrant], point );
 		} else {
+			cout << "addpt dimen == 0" << endl;
 			// if the width is zero then it is a point
 			// create new internal node and move existing point into new node
 			// then move current point into new node
@@ -117,20 +126,36 @@ void add_point( struct node* previous, struct node* current, struct node* point 
 	}
 }
 
+// allocate memory for a point with some random x,y and return a pointer to it
+struct node* random_point()
+{
+	struct node* current = (struct node*) malloc( sizeof( struct node ) );
+	// default dimen is 1, point must have 0
+	current->dimen = 0.0;
+	current->mass= 1.0;
+	// x,y between 0,1
+	current->x = rand() / (float)RAND_MAX;
+	current->y = rand() / (float)RAND_MAX;
+	return current;
+}
+
 void draw( sf::RenderWindow &window, struct node* current, sf::CircleShape &dot, sf::RectangleShape &box )
 {
+	cout << "draw called" << endl;
 	if( current != nullptr ) {
-		if( current->dimen != 0 ) {
+		if( current->dimen != 0.0 ) {
+			cout << "draw box" << endl;
 			// it's an internal node, let's draw a box
-			box.setSize( sf::Vector2f( current->dimen, current->dimen ) );
-			box.setPosition( current->x_center, current->y_center );
+			box.setSize( sf::Vector2f( current->dimen * window.getSize().x, current->dimen * window.getSize().y ) );
+			box.setPosition( current->x_center * window.getSize().x, current->y_center * window.getSize().y );
 			window.draw( box );
 			for( int iter = 0; iter < CHILDREN; ++iter ) {
 				draw( window, current->next[iter], dot, box );
 			}
 		} else {
 			// it's a point, lets draw a dot
-			dot.setPosition( current->x, current->y);
+			cout << "draw dot" << endl;
+			dot.setPosition( current->x * window.getSize().x, current->y * window.getSize().y);
 			window.draw( dot );
 		}
 	}
@@ -141,6 +166,13 @@ int main(int argc, char* argv[])
 	// create a pointer to a node, always keep track of this
 	struct node* head = (struct node*) malloc( sizeof( struct node ) );
 	nullify_node( head );
+	struct node* random_pt = random_point();
+	cout << "random point x y " << random_pt->x << " " << random_pt->y << endl;
+	//cout << "random point dimen " << random_pt->dimen << endl;
+	add_point( nullptr, head, random_pt );
+	cout << "random point quadrant " << random_pt->quadrant << endl;
+	//head->next[random_pt->quadrant] = random_pt;
+	cout << "head next " << random_pt->quadrant << " " << head->next[random_pt->quadrant] << endl;
 
 	// these values represent the default windowed dimensions (not fullscreen)
 	int window_width = 800;
@@ -164,7 +196,10 @@ int main(int argc, char* argv[])
 	box.setFillColor( sf::Color::Transparent );
 	box.setOutlineColor( sf::Color::Black );
 	// a negative thickness means that it expands inwards towards the center of the shape
-	box.setOutlineThickness( -20.0 );
+	box.setOutlineThickness( -8.0 );
+
+	draw( window, head, dot, box );
+	window.display();
 
 	while( window.isOpen() )
 	{
@@ -193,10 +228,12 @@ int main(int argc, char* argv[])
 				window.clear( sf::Color::White );
 			}
 		}
+		/*
 		window.clear( sf::Color::White );
 		// draw define elsewhere
 		draw( window, head, dot, box );
 		window.display();
+		*/
 	}
 	return 0;
 }
