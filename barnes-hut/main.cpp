@@ -174,12 +174,10 @@ int main(int argc, char* argv[])
 	struct node* head = (struct node*) malloc( sizeof( struct node ) );
 	struct node* null = nullptr;
 	nullify_node( head );
-	struct node* random_pt;
-	random_pt = random_point();
-	cout << "random point x y " << random_pt->x << " " << random_pt->y << endl;
-	//cout << "random point dimen " << random_pt->dimen << endl;
-	add_point( null, head, random_pt );
-	cout << "random point quadrant " << random_pt->quadrant << endl;
+	struct node* dip = random_point();
+	add_point( null, head, dip );
+	dip = random_point();
+	add_point( null, head, dip );
 
 	/*
 	random_pt = random_point();
@@ -189,7 +187,6 @@ int main(int argc, char* argv[])
 	*/
 
 	//head->next[random_pt->quadrant] = random_pt;
-	cout << "head next " << random_pt->quadrant << " " << head->next[random_pt->quadrant] << endl;
 
 	// these values represent the default windowed dimensions (not fullscreen)
 	int window_width = 800;
