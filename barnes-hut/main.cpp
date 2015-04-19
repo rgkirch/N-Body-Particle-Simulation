@@ -77,53 +77,63 @@ void add_point( struct node* previous, struct node* current, struct node* point 
 			// compare point's x,y to find where it should go
 			point->quadrant ^= (point->x >= current->x_center);
 			point->quadrant ^= (point->y >= current->y_center)<<1;
-			add_point( current, current->next[quadrant], point );
+			add_point( current, current->next[point->quadrant], point );
 		} else {
 			// if the width is zero then it is a point
 			// create new internal node and move existing point into new node
 			// then move current point into new node
+			// save the place of the current point
 			struct node* old_point = current;
+			// reserve new memory for the internal node
 			current = (struct node*) malloc( sizeof( struct node ) );
+			// zero out the new node
 			nullify_node( current );
+			// get quadrant from the old point
+			current->quadrant = old_point->quadrant;
 			// new node inherits dimension
+			// nullptr from c++11
 			if( previous != nullptr ) {
 				current->dimen = previous->dimen / 2.0;
 			}
+			// if previous is null, then dimen should be 1.0 which is default
 			// calculate the new center
 			if( current->quadrant & 1 ) {
-				x_center += current->dimen;
+				current->x_center += current->dimen;
 			} else {
-				x_center -= current->dimen;
+				current->x_center -= current->dimen;
 			}
 			if( current->quadrant<<1 & 1 ) {
-				y_center += current->dimen;
+				current->y_center += current->dimen;
 			} else {
-				y_center -= current->dimen;
+				current->y_center -= current->dimen;
 			}
 			// recurse on both old_point and point
-			add_point( current, current->dimen, old_point );
+			// i'll need to recalculate the quadrant of the old point and the new point
+			add_point( previous, current, old_point );
 			// TODO - if the x and y are the same, then there is infinite recursion
-			add_point( current, current->dimen, point );
+			add_point( previous, current, point );
 		}
 	//current = ( struct node* ) malloc( sizeof( struct node ) );
 	}
 }
 
-void draw( sf::RenderWindow &window, struct node* head, &dot, &box )
+void draw( sf::RenderWindow &window, struct node* current, sf::CircleShape &dot, sf::RectangleShape &box )
 {
-	dot.setRadius( 4 );
-	dot.setFillColor( sf::Color::Black );
-
-	box.setFillColor( sf::Color::Black );
-	box.setPosition();
-	box.setSize( sf::Vector2f( 8, 8 ) );
-
-	if( bar.getPosition().x >= window.getSize().x )
-	{
-		window.clear( sf::Color::White );
-		bar.setPosition(0, 0.5 * window.getSize().y);
+	if( current != nullptr ) {
+		if( current->dimen != 0 ) {
+			// it's an internal node, let's draw a box
+			box.setSize( sf::Vector2f( current->dimen, current->dimen ) );
+			box.setPosition( current->x_center, current->y_center );
+			window.draw( box );
+			for( int iter = 0; iter < CHILDREN; ++iter ) {
+				draw( window, current->next[iter], dot, box );
+			}
+		} else {
+			// it's a point, lets draw a dot
+			dot.setPosition( current->x, current->y);
+			window.draw( dot );
+		}
 	}
-	window.draw( bar );
 }
 
 int main(int argc, char* argv[])
@@ -148,8 +158,13 @@ int main(int argc, char* argv[])
 	dot.setRadius( 4 );
 	dot.setFillColor( sf::Color::Black );
 
-	box.setSize( sf::Vector2f( 8, 8 ) );
-	box.setFillColor( sf::Color::Black );
+	box.setSize( sf::Vector2f( window.getSize().x, window.getSize().y ) );
+	box.setPosition( sf::Vector2f( window.getSize().x / 2.0, window.getSize().y / 2.0 ) );
+	cout << window.getSize().x << " " << window.getSize().y << endl;
+	box.setFillColor( sf::Color::Transparent );
+	box.setOutlineColor( sf::Color::Black );
+	// a negative thickness means that it expands inwards towards the center of the shape
+	box.setOutlineThickness( -20.0 );
 
 	while( window.isOpen() )
 	{
@@ -157,27 +172,29 @@ int main(int argc, char* argv[])
 		while( window.pollEvent( event ) )
 		{
 			if( event.type == sf::Event::Closed ) {
-				cout << "closing window" << endl;
+				// cout << "closing window" << endl;
 				window.close();
 			}
 			if( event.type == sf::Event::LostFocus ) {
-				cout << "focus lost" << endl;
+				// cout << "focus lost" << endl;
 			}
 			if( event.type == sf::Event::GainedFocus ) {
-				cout << "focus gained" << endl;
+				// cout << "focus gained" << endl;
 			}
 			if( event.type == sf::Event::MouseMoved) {
-				cout << sf::Mouse::getPosition().x << " " << sf::Mouse::getPosition().y << endl;
+				// cout << sf::Mouse::getPosition().x << " " << sf::Mouse::getPosition().y << endl;
 			}
 			if( event.type == sf::Event::MouseButtonPressed) {
-				cout << "mouse button pressed" << endl;
+				// cout << "mouse button pressed" << endl;
 			}
 			if( event.type == sf::Event::Resized ) {
-				cout << "resized to " << event.size.width << " by " << event.size.height << endl;
+				// cout << "resized to " << event.size.width << " by " << event.size.height << endl;
 				window.setView( sf::View( sf::FloatRect( 0, 0, event.size.width, event.size.height ) ) );
 				window.clear( sf::Color::White );
 			}
 		}
+		window.clear( sf::Color::White );
+		// draw define elsewhere
 		draw( window, head, dot, box );
 		window.display();
 	}
