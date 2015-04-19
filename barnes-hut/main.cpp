@@ -61,12 +61,12 @@ void nullify_node( struct node* current )
 // if next != null and x&y != null then it is an internal node
 // an internal node points to four other nodes
 // x&y describe the position of the center of mass of the next nodes
-void add_point( struct node* previous, struct node* current, struct node* point )
+void add_point( struct node* &previous, struct node* &current, struct node* &point )
 {
 	cout << "add point called" << endl;
 	// we can't yet add in our mass and average against the x,y
 	// what if we already did that to the parent and we just need to make this a point
-	if( current == NULL ) {
+	if( current == nullptr ) {
 		cout << "addpt current == null" << endl;
 		// the quadrant is empty, we don't have external nodes, instead it's just null
 		current = point;
@@ -94,6 +94,7 @@ void add_point( struct node* previous, struct node* current, struct node* point 
 			// save the place of the current point
 			struct node* old_point = current;
 			// reserve new memory for the internal node
+			cout << "addptr create new node" << endl;
 			current = (struct node*) malloc( sizeof( struct node ) );
 			// zero out the new node
 			nullify_node( current );
@@ -124,6 +125,7 @@ void add_point( struct node* previous, struct node* current, struct node* point 
 		}
 	//current = ( struct node* ) malloc( sizeof( struct node ) );
 	}
+	cout << "addpt end" << endl;
 }
 
 // allocate memory for a point with some random x,y and return a pointer to it
@@ -139,7 +141,7 @@ struct node* random_point()
 	return current;
 }
 
-void draw( sf::RenderWindow &window, struct node* current, sf::CircleShape &dot, sf::RectangleShape &box )
+void draw( sf::RenderWindow &window, struct node* &current, sf::CircleShape &dot, sf::RectangleShape &box )
 {
 	cout << "draw called" << endl;
 	if( current != nullptr ) {
@@ -161,16 +163,31 @@ void draw( sf::RenderWindow &window, struct node* current, sf::CircleShape &dot,
 	}
 }
 
+void assign( struct node* &current, struct node* &point )
+{
+	current = point;
+}
+
 int main(int argc, char* argv[])
 {
 	// create a pointer to a node, always keep track of this
 	struct node* head = (struct node*) malloc( sizeof( struct node ) );
+	struct node* null = nullptr;
 	nullify_node( head );
-	struct node* random_pt = random_point();
+	struct node* random_pt;
+	random_pt = random_point();
 	cout << "random point x y " << random_pt->x << " " << random_pt->y << endl;
 	//cout << "random point dimen " << random_pt->dimen << endl;
-	add_point( nullptr, head, random_pt );
+	add_point( null, head, random_pt );
 	cout << "random point quadrant " << random_pt->quadrant << endl;
+
+	/*
+	random_pt = random_point();
+	cout << "random point x y " << random_pt->x << " " << random_pt->y << endl;
+	add_point( null, head, random_pt );
+	cout << "random point quadrant " << random_pt->quadrant << endl;
+	*/
+
 	//head->next[random_pt->quadrant] = random_pt;
 	cout << "head next " << random_pt->quadrant << " " << head->next[random_pt->quadrant] << endl;
 
