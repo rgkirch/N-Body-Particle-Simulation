@@ -61,7 +61,7 @@ void nullify_node( struct node* current )
 // if next != null and x&y != null then it is an internal node
 // an internal node points to four other nodes
 // x&y describe the position of the center of mass of the next nodes
-void add_point( struct node* &previous, struct node* &current, struct node* &point )
+void old_add_point( struct node* &previous, struct node* &current, struct node* &point )
 {
 	cout << "add point called" << endl;
 	// we can't yet add in our mass and average against the x,y
@@ -74,7 +74,7 @@ void add_point( struct node* &previous, struct node* &current, struct node* &poi
 	} else {
 		// current is not null, then it should have an x,y and mass
 		// it could still be a point though, we cant average ourselves just yet
-		if( current->dimen != 0 ) {
+		if( current->dimen != 0.0 ) {
 			cout << "addpt dimen != 0" << endl;
 			// ok, the width is nonzero, it's not a point
 			// lets just add ourself to the register, "point was here"
@@ -87,45 +87,62 @@ void add_point( struct node* &previous, struct node* &current, struct node* &poi
 			point->quadrant ^= (point->y >= current->y_center)<<1;
 			add_point( current, current->next[point->quadrant], point );
 		} else {
+			if( previous == nullptr ) {
+				cout << "SHITFUCK" << endl;
+			}
 			cout << "addpt dimen == 0" << endl;
 			// if the width is zero then it is a point
 			// create new internal node and move existing point into new node
 			// then move current point into new node
-			// save the place of the current point
-			struct node* old_point = current;
 			// reserve new memory for the internal node
 			cout << "addptr create new node" << endl;
-			current = (struct node*) malloc( sizeof( struct node ) );
+			previous->next[current->quadrant] = (struct node*) malloc( sizeof( struct node ) );
 			// zero out the new node
-			nullify_node( current );
-			// get quadrant from the old point
-			current->quadrant = old_point->quadrant;
+			nullify_node( previous->next[current->quadrant] );
+			// get quadrant from the current point
+			previous->next[current->quadrant]->quadrant = current->quadrant;
 			// new node inherits dimension
-			// nullptr from c++11
-			if( previous != nullptr ) {
-				current->dimen = previous->dimen / 2.0;
-			}
-			// if previous is null, then dimen should be 1.0 which is default
+			previous->next[current->quadrant]->dimen = previous->dimen / 2.0;
 			// calculate the new center
-			if( current->quadrant & 1 ) {
-				current->x_center += current->dimen;
+			if( previous->next[current->quadrant]->quadrant & 1 ) {
+				previous->next[current->quadrant]->x_center += previous->next[current->quadrant]->dimen;
 			} else {
-				current->x_center -= current->dimen;
+				previous->next[current->quadrant]->x_center -= previous->next[current->quadrant]->dimen;
 			}
-			if( current->quadrant<<1 & 1 ) {
-				current->y_center += current->dimen;
+			if( previous->next[current->quadrant]->quadrant>>1 & 1 ) {
+				previous->next[current->quadrant]->y_center += previous->next[current->quadrant]->dimen;
 			} else {
-				current->y_center -= current->dimen;
+				previous->next[current->quadrant]->y_center -= previous->next[current->quadrant]->dimen;
 			}
 			// recurse on both old_point and point
-			// i'll need to recalculate the quadrant of the old point and the new point
-			add_point( previous, current, old_point );
+			// i'll need to recalculate the quadrant of the old point 'current' and the new point
+			add_point( previous, previous->next[current->quadrant], current );
 			// TODO - if the x and y are the same, then there is infinite recursion
-			add_point( previous, current, point );
+			add_point( previous, previous->next[current->quadrant], point );
 		}
 	//current = ( struct node* ) malloc( sizeof( struct node ) );
 	}
 	cout << "addpt end" << endl;
+}
+
+void add_point( struct node* &previous, struct node* &current, struct node* &point )
+{
+	if( current == nullptr ) {
+		current = point;
+	} else {
+		if( current->dimen > 0 ) {
+			point->quadrant = 0;
+			point->quadrant ^= (point->x >= current->x_center);
+			point->quadrant ^= (point->y >= current->y_center)<<1;
+			add_point( current, current->next[point->quadrant], point );
+		} else {
+			previous->next[current->quadrant] = (struct node*) malloc( sizeof( struct node ) );
+			nullify_node( previous->next[current->quadrant] );
+			//add_point( previous, , current );
+			//add_point( previous, , point );
+			}
+		}
+	}
 }
 
 // allocate memory for a point with some random x,y and return a pointer to it
@@ -161,11 +178,6 @@ void draw( sf::RenderWindow &window, struct node* &current, sf::CircleShape &dot
 			window.draw( dot );
 		}
 	}
-}
-
-void assign( struct node* &current, struct node* &point )
-{
-	current = point;
 }
 
 int main(int argc, char* argv[])
