@@ -32,6 +32,7 @@ struct node
 	// width of the node (points don't have widths)
 	float dimen;
 	unsigned int quadrant;
+	unsigned int id;
 };
 
 // pass in how many child nodes for extensibility
@@ -154,17 +155,19 @@ void draw( sf::RenderWindow &window, struct node* &current, sf::CircleShape &dot
 {
 	cout << "draw called" << endl;
 	if( current != nullptr ) {
-		cout << "draw, current not nullptr" << endl;
 		if( current->dimen > 0 ) {
-			cout << "draw, current dimen > 0" << endl;
 			// it's an internal node, let's draw a box
 			box.setSize( sf::Vector2f( current->dimen * window.getSize().x, current->dimen * window.getSize().y ) );
 			box.setPosition( current->x_center * window.getSize().x, current->y_center * window.getSize().y );
 			cout << "draw box" << endl;
 			window.draw( box );
 			for( int iter = 0; iter < CHILDREN; ++iter ) {
-				cout << "going to call on " << current->next[iter] << endl;
-				draw( window, current->next[iter], dot, box );
+				if( current->next[iter] != nullptr )
+				{
+					printf( "from %p calling %p\n", current, current->next[iter] );
+					if( current != current->next[iter] )
+						draw( window, current->next[iter], dot, box );
+				}
 			}
 		} else {
 			// it's a point, lets draw a dot
@@ -180,18 +183,44 @@ void assign( struct node* &current, struct node* &point )
 	current = point;
 }
 
+/*
+ostream& operator<<( ostream &o, struct node* &current )
+{
+	if( current->dimen > 0 )
+	{
+		printf( "node: %p", current );
+		//o << "node: " << &current << endl;
+	} else {
+		printf( "point: %p", current );
+		//o << "point: " << &current << endl;
+	}
+}
+*/
+
+void print_node( struct node* &current )
+{
+	if( current->dimen > 0 )
+		printf( "node: %p\n", current );
+	else
+		printf( "point: %p\n", current );
+	printf( "next: %p\n", current->next );
+	printf( "next[0]: %p\n", current->next[0] );
+}
+
 int main(int argc, char* argv[])
 {
 	// create a pointer to a node, always keep track of this
 	struct node* head = (struct node*) malloc( sizeof( struct node ) );
 	struct node* null = nullptr;
 	nullify_node( head );
+	print_node( head );
 	struct node* dip = random_point();
 	add_point( null, head, dip );
-	dip = random_point();
-	add_point( null, head, dip );
-	dip = random_point();
-	add_point( null, head, dip );
+	for( int classic = 0; classic < 9; ++classic )
+	{
+		dip = random_point();
+		add_point( null, head, dip );
+	}
 
 	/*
 	random_pt = random_point();
