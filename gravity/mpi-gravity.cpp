@@ -76,13 +76,15 @@ int* color_picker( int* value, int rank, int n_proc )
 	return value;
 }
 
-void create_window(sf::RenderWindow &window)
+void create_window(sf::RenderWindow &window, int window_width, int window_height )
 {
-	// create window
+	window.create( sf::VideoMode( window_width, window_height ), "barnes_hut" );
+	window.clear( sf::Color::White );
 }
 
-int main( int argc, char **argv )
+int main( int argc, char *argv[] )
 {	 
+	// these values represent the default windowed dimensions (not fullscreen)
 	int window_width = 800;
 	int window_height = 600;
 	// initial velocity random between 0 and this
@@ -100,7 +102,7 @@ int main( int argc, char **argv )
 	// processor id
 	int rank;
 	// how many steps to simulate
-	int nSteps = 500;
+	int nSteps = 50;
 	// should it save the frames or not
 	int save_frames = 0;
 	int rgb_array[3];
@@ -113,7 +115,7 @@ int main( int argc, char **argv )
 	MPI_Comm_size( MPI_COMM_WORLD, &n_proc );
 	MPI_Comm_rank( MPI_COMM_WORLD, &rank );
 
-	color_picker( rgb_array, rank, n_proc );
+	//color_picker( rgb_array, rank, n_proc );
 	//	allocate memory for particles
 	particle_t *particles = new particle_t[n];
 	//	define a particle
@@ -122,7 +124,7 @@ int main( int argc, char **argv )
 	MPI_Type_commit( &PARTICLE );
 	//	set up the data partitioning across processors
 	//	define the offsets
-	int particle_per_proc = n / n_proc;
+	int particle_per_proc = ceil(n / n_proc);
 	int* partition_offsets = new int[n_proc];
 	for( int i = 0; i < n_proc; ++i )
 		partition_offsets[i] = particle_per_proc * i;
@@ -131,7 +133,7 @@ int main( int argc, char **argv )
 	int* partition_sizes = new int[n_proc];
 	for( int i = 0; i < n_proc; ++i )
 		partition_sizes[i] = particle_per_proc;
-	partition_sizes[n_proc-1] = n / n_proc + n % n_proc;
+	partition_sizes[n_proc-1] = n - (particle_per_proc * (n_proc-1));
 	//	allocate storage for local partition
 	int nlocal = partition_sizes[rank];
 	particle_t* local = new particle_t[nlocal];
@@ -139,7 +141,7 @@ int main( int argc, char **argv )
 	//	every process creates a pointer to a renderwindow
 	sf::RenderWindow window;
 	// create a circle object, must be visible to all proc
-	sf::CircleShape circle(1, 8);
+	sf::CircleShape circle(3, 8);
 	circle.setFillColor( sf::Color::Black );
 	if( rank == 0 )
 	{
@@ -152,20 +154,39 @@ int main( int argc, char **argv )
 		}
 		//	only one process creates a window
 		// function call defined above
-		create_window(window);
+		create_window(window, window_width, window_height);
 	}
 	//	distribute the particles
 	MPI_Scatterv( particles, partition_sizes, partition_offsets, PARTICLE, local, nlocal, PARTICLE, 0, MPI_COMM_WORLD );
 	//	simulate a number of time steps
 	double simulation_time = read_timer( );
-	for( int step = 0; step < nSteps; step++ )
-	// while( 1 )
+	int step = 0;
+	//for( int step = 0; step < nSteps; step++ )
+	while( window.isOpen() )
 	{
-		if( step == 0)
+		sf::Event event;
+		while( window.pollEvent( event ) )
 		{
-			for( int i = 0; i < nlocal; ++i )
-			{
-				local[i].color = sf::Color::Red;
+			if( event.type == sf::Event::Closed ) {
+				// cout << "closing window" << endl;
+				window.close();
+			}
+			if( event.type == sf::Event::LostFocus ) {
+				// cout << "focus lost" << endl;
+			}
+			if( event.type == sf::Event::GainedFocus ) {
+				// cout << "focus gained" << endl;
+			}
+			if( event.type == sf::Event::MouseMoved) {
+				// cout << sf::Mouse::getPosition().x << " " << sf::Mouse::getPosition().y << endl;
+			}
+			if( event.type == sf::Event::MouseButtonPressed) {
+				// cout << "mouse button pressed" << endl;
+			}
+			if( event.type == sf::Event::Resized ) {
+				// cout << "resized to " << event.size.width << " by " << event.size.height << endl;
+				window.setView( sf::View( sf::FloatRect( 0, 0, event.size.width, event.size.height ) ) );
+				window.clear( sf::Color::White );
 			}
 		}
 		//	collect all global data locally
@@ -176,15 +197,16 @@ int main( int argc, char **argv )
 			window.clear( sf::Color::White );
 			for( int i = 0; i < n; ++i )
 			{
+				printf( "n: %d\n", i );
 				// V = 4/3*pi*r**3
 				// pow((3/4)V/M_PI, 1/3)
 				// pow(3.0/4.0/M_PI*particles[i].mass,1.0/3.0)
-				circle.setRadius(particles[i].mass);
+				//circle.setRadius(particles[i].mass);
 				// circle.setRadius(pow(3.0/4.0/M_PI*particles[i].mass,1.0/3.0));
 				circle.setFillColor(particles[i].color);
 				// fmod is floating point modulus
 				// don't do modulus TODO
-				circle.setPosition( fmod( particles[i].x * WINDOW_WIDTH, WINDOW_WIDTH), fmod(particles[i].y * WINDOW_HEIGHT, WINDOW_HEIGHT ) );
+				circle.setPosition( fmod( particles[i].x * window_width, window_width), fmod(particles[i].y * window_height, window_height ) );
 				// cout << particles[i].x << " " << particles[i].y << endl;
 				// circle.setPosition( .5 * WINDOW_WIDTH, .5 * WINDOW_HEIGHT );
 				window.draw( circle );
@@ -212,6 +234,11 @@ int main( int argc, char **argv )
 		{
 			move( local[i], timescale, velFric );
 		}
+		++step;
+		/*
+		if( step > nSteps )
+			window.close();
+		*/
 	}
 	simulation_time = read_timer( ) - simulation_time;
   
@@ -245,8 +272,8 @@ void init_particles( int n, particle_t* p, int initialVelocity )
 		p[i].ay = 0.0;
 		p[i].mass = 3.0;
 		// p[i].displaySize = p[i].mass * 4.0;
-		p[i].vx = rand() / (double)RAND_MAX * initialVelocity;
-		p[i].vy = rand() / (double)RAND_MAX * initialVelocity;
+		p[i].vx = (rand() / (double)RAND_MAX * initialVelocity) + 1;
+		p[i].vy = (rand() / (double)RAND_MAX * initialVelocity) + 1;
 		p[i].x = rand() / (double)RAND_MAX;
 		p[i].y = rand() / (double)RAND_MAX;
 		p[i].color = sf::Color::Black;
@@ -259,6 +286,7 @@ void apply_force( particle_t &particle, particle_t &neighbor, float cutoff, floa
 	double dy = neighbor.y - particle.y;
 	double r2 = dx * dx + dy * dy;
 	if( r2 == 0 ) {
+		printf( "error: two points with the same position" );
 		return;
 	} else if( r2 < cutoff ) {
 		//double xdiff = (double)abs(particle.vx - neighbor.vx);
