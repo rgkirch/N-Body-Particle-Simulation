@@ -77,8 +77,8 @@ int* color_picker( int* value, int rank, int n_proc )
 int main( int argc, char *argv[] )
 {	 
 	// these values represent the default windowed dimensions (not fullscreen)
-	int window_width = 800;
-	int window_height = 600;
+	int window_width = 1920;
+	int window_height = 1080;
 	// initial velocity random between 0 and this
 	float initialVelocity = 10.0;
 	// velocity drops to this fraction of itself every step
@@ -88,7 +88,7 @@ int main( int argc, char *argv[] )
 	// if they are farther away from eachother than this, no interaction besides attraction
 	float cutoff = 0.00001;
 	// number of particles
-	int n = 100;
+	int n = 1000;
 	// number of processors
 	int n_proc;
 	// processor id
@@ -208,8 +208,8 @@ void init_particles( int n, particle_t* p, int initialVelocity )
 		p[i].ay = 0.0;
 		p[i].mass = 3.0;
 		// p[i].displaySize = p[i].mass * 4.0;
-		p[i].vx = (rand() / (float)RAND_MAX * initialVelocity) + 1;
-		p[i].vy = (rand() / (float)RAND_MAX * initialVelocity) + 1;
+		p[i].vx = (rand() / (float)RAND_MAX * initialVelocity);
+		p[i].vy = (rand() / (float)RAND_MAX * initialVelocity);
 		p[i].x = rand() / (float)RAND_MAX;
 		p[i].y = rand() / (float)RAND_MAX;
 		p[i].color = sf::Color::Black;
