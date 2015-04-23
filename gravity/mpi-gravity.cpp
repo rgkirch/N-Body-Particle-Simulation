@@ -30,17 +30,17 @@ inline int max( int a, int b ) { return a > b ? a : b; }
 
 typedef struct 
 {
-	double x;
-	double y;
-	double vx;
-	double vy;
-	double ax;
-	double ay;
-	double mass;
+	float x;
+	float y;
+	float vx;
+	float vy;
+	float ax;
+	float ay;
+	float mass;
 	sf::Color color;
 } particle_t;
 
-double read_timer();
+float read_timer();
 void init_particles( int n, particle_t* p, int initialVelocity );
 void apply_force( particle_t &particle, particle_t &neighbor, float cutoff, float timescale );
 void move( particle_t &p, float timescale, float velFric );
@@ -120,7 +120,7 @@ int main( int argc, char *argv[] )
 	particle_t *particles = new particle_t[n];
 	//	define a particle
 	MPI_Datatype PARTICLE;
-	MPI_Type_contiguous( 6, MPI_DOUBLE, &PARTICLE );
+	MPI_Type_contiguous( 6, MPI_FLOAT, &PARTICLE );
 	MPI_Type_commit( &PARTICLE );
 	//	set up the data partitioning across processors
 	//	define the offsets
@@ -159,7 +159,7 @@ int main( int argc, char *argv[] )
 	//	distribute the particles
 	MPI_Scatterv( particles, partition_sizes, partition_offsets, PARTICLE, local, nlocal, PARTICLE, 0, MPI_COMM_WORLD );
 	//	simulate a number of time steps
-	double simulation_time = read_timer( );
+	float simulation_time = read_timer( );
 	int step = 0;
 	//for( int step = 0; step < nSteps; step++ )
 	while( window.isOpen() )
@@ -197,7 +197,6 @@ int main( int argc, char *argv[] )
 			window.clear( sf::Color::White );
 			for( int i = 0; i < n; ++i )
 			{
-				printf( "n: %d\n", i );
 				// V = 4/3*pi*r**3
 				// pow((3/4)V/M_PI, 1/3)
 				// pow(3.0/4.0/M_PI*particles[i].mass,1.0/3.0)
@@ -272,35 +271,34 @@ void init_particles( int n, particle_t* p, int initialVelocity )
 		p[i].ay = 0.0;
 		p[i].mass = 3.0;
 		// p[i].displaySize = p[i].mass * 4.0;
-		p[i].vx = (rand() / (double)RAND_MAX * initialVelocity) + 1;
-		p[i].vy = (rand() / (double)RAND_MAX * initialVelocity) + 1;
-		p[i].x = rand() / (double)RAND_MAX;
-		p[i].y = rand() / (double)RAND_MAX;
+		p[i].vx = (rand() / (float)RAND_MAX * initialVelocity) + 1;
+		p[i].vy = (rand() / (float)RAND_MAX * initialVelocity) + 1;
+		p[i].x = rand() / (float)RAND_MAX;
+		p[i].y = rand() / (float)RAND_MAX;
 		p[i].color = sf::Color::Black;
 	}
 }
 
 void apply_force( particle_t &particle, particle_t &neighbor, float cutoff, float timescale)
 {
-	double dx = neighbor.x - particle.x;
-	double dy = neighbor.y - particle.y;
-	double r2 = dx * dx + dy * dy;
+	float dx = neighbor.x - particle.x;
+	float dy = neighbor.y - particle.y;
+	float r2 = dx * dx + dy * dy;
 	if( r2 == 0 ) {
-		printf( "error: two points with the same position" );
-		return;
+		// printf( "%p %p\n", &particle, &neighbor );
 	} else if( r2 < cutoff ) {
-		//double xdiff = (double)abs(particle.vx - neighbor.vx);
-		//double ydiff = (double)abs(particle.vy - neighbor.vy);
-		double xsum = (particle.vx + neighbor.vx);
-		double ysum = (particle.vy + neighbor.vy);
-		double xavg = xsum / 2;
-		double yavg = ysum / 2;
+		//float xdiff = (float)abs(particle.vx - neighbor.vx);
+		//float ydiff = (float)abs(particle.vy - neighbor.vy);
+		float xsum = (particle.vx + neighbor.vx);
+		float ysum = (particle.vy + neighbor.vy);
+		float xavg = xsum / 2;
+		float yavg = ysum / 2;
 		particle.vx = xavg;
 		particle.vy = yavg;
 	} else {
-		double force = 0.0;
+		float force = 0.0;
 		force = 1/r2;
-		double direction = atan2(dx, dy);
+		float direction = atan2(dx, dy);
 		particle.vx += sin(direction)*timescale;
 		particle.vy += cos(direction)*timescale;
 	}
@@ -316,7 +314,7 @@ void move( particle_t &p, float timescale, float velFric )
 	p.y  += p.vy * timescale;
 }
 
-double read_timer( )
+float read_timer( )
 {
 	static bool initialized = false;
 	static struct timeval start;
