@@ -82,19 +82,19 @@ int main( int argc, char *argv[] )
 	// initial velocity random between 0 and this
 	float initialVelocity = 10.0;
 	// velocity drops to this fraction of itself every step
-	float velFric = 0.99;
+	float velFric = 0.999;
 	// scale back how far they move, increases the quality of the calculations
 	float timescale = 0.0005;
 	// if they are farther away from eachother than this, no interaction besides attraction
 	float cutoff = 0.00001;
 	// number of particles
-	int n = 1000;
+	int n = 5000;
 	// number of processors
 	int n_proc;
 	// processor id
 	int rank;
 	// how many steps to simulate
-	int nSteps = 500;
+	int nSteps = 800;
 	// should it save the frames or not
 	int save_frames = 1;
 	int rgb_array[3];
@@ -185,8 +185,10 @@ int main( int argc, char *argv[] )
 		}
 		++step;
 		printf( "%d\n", step );
+		/*
 		if( step > nSteps )
 			window.close();
+		*/
 	}
 	simulation_time = read_timer( ) - simulation_time;
   
