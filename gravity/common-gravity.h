@@ -5,7 +5,7 @@ inline int min( int a, int b ) { return a < b ? a : b; }
 inline int max( int a, int b ) { return a > b ? a : b; }
 
 //  saving parameters
-const int NSTEPS = 500;
+const int NSTEPS = 50;
 const int SAVEFREQ = 1;
 
 // particle data structure
@@ -22,7 +22,7 @@ typedef struct
 //  timing routines
 double read_timer( );
 
-void set_size( int n );
+double set_size( int n );
 
 //  simulation routines
 void init_particles( int n, particle_t *p );

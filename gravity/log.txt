@@ -1,0 +1,6 @@
+last commit, i changed sizeof to new
+i replaced define with find_option
+
+features to implement-
+	i could represent a blob as a vector of particles - another particle far away would see the blob as an aggragate mass (one calculation where the mass is the sum of the comonents)
+

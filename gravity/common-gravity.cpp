@@ -32,43 +32,46 @@ double read_timer( )
 }
 
 //  keep density constant
-void set_size( int n ) 
+double set_size( int n ) 
 {
     size = sqrt( density * n );
+	return size;
 }
 
 //	Initialize the particle positions and velocities
 void init_particles( int n, particle_t *p )
 {
-	srand48( time( NULL ) );
+	srand( time( NULL ) );
 		
-	int sx = (int)ceil(sqrt((double)n));
-	int sy = (n+sx-1)/sx;
+	// int sx = (int)ceil(sqrt((double)n));
+	// int sy = (n+sx-1)/sx;
 	
-	int *shuffle = (int*)malloc( n * sizeof(int) );
-	for( int i = 0; i < n; i++ )
-		shuffle[i] = i;
-	
+	// int *shuffle = (int*)malloc( n * sizeof(int) );
+	// for( int i = 0; i < n; i++ )
+		// shuffle[i] = i;
+
 	for( int i = 0; i < n; i++ ) 
 	{
 		//	make sure particles are not spatially sorted
-		int j = lrand48()%(n-i);
-		int k = shuffle[j];
-		shuffle[j] = shuffle[n-i-1];
+		// int j = lrand48()%(n-i);
+		// int k = shuffle[j];
+		// shuffle[j] = shuffle[n-i-1];
 		
 		//	distribute particles evenly to ensure proper spacing
 
-		p[i].y = size*(1.+(k/sx))/(1+sy);
+		// p[i].y = size*(1.+(k/sx))/(1+sy);
 
 		//	assign random velocities within a bound
-		// p[i].vx = drand48()*2-1;
-		// p[i].vy = drand48()*2-1;
-		p[i].vx = (int)(p[i].x - size/2) * drand48()*2-1;
-		p[i].vy = (int)(p[i].y - size/2) * drand48()*2-1;
+		p[i].vx = rand()*10;
+		p[i].vy = rand()*10;
+		// p[i].vx = (int)(p[i].x - size/2) * drand48()*2-1;
+		// p[i].vy = (int)(p[i].y - size/2) * drand48()*2-1;
+		p[i].x = rand()*size;
+		p[i].y = rand()*size;
 		// p[i].vx = 0;
 		// p[i].vy = 0;
 	}
-	free( shuffle );
+	// free( shuffle );
 }
 
 //	interact two particles

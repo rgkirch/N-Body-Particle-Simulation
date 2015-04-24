@@ -87,7 +87,6 @@ void init_particles( int n, particle_t *p )
 //
 void apply_force( particle_t &particle, particle_t &neighbor , double *dmin, double *davg, int *navg)
 {
-
     double dx = neighbor.x - particle.x;
     double dy = neighbor.y - particle.y;
     double r2 = dx * dx + dy * dy;
@@ -103,9 +102,6 @@ void apply_force( particle_t &particle, particle_t &neighbor , double *dmin, dou
 		
     r2 = fmax( r2, min_r*min_r );
     double r = sqrt( r2 );
- 
-    
-	
     //
     //  very simple short-range repulsive force
     //
