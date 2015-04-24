@@ -32,6 +32,7 @@ struct node
 	// width of the node (points don't have widths)
 	float dimen;
 	unsigned int quadrant;
+	unsigned int id;
 };
 
 // pass in how many child nodes for extensibility
@@ -83,42 +84,54 @@ void old_add_point( struct node* &previous, struct node* &current, struct node* 
 			current->mass += point->mass;
 			// we include ourself and now we need to recurse on the correct next pointer
 			// compare point's x,y to find where it should go
+			point->quadrant = 0;
 			point->quadrant ^= (point->x >= current->x_center);
 			point->quadrant ^= (point->y >= current->y_center)<<1;
 			add_point( current, current->next[point->quadrant], point );
 		} else {
-			if( previous == nullptr ) {
-				cout << "SHITFUCK" << endl;
-			}
-			cout << "addpt dimen == 0" << endl;
+			cout << "addpt current dimen == 0" << endl;
 			// if the width is zero then it is a point
 			// create new internal node and move existing point into new node
 			// then move current point into new node
 			// reserve new memory for the internal node
+			struct node* new_node = (struct node*) malloc( sizeof( struct node ) );
 			cout << "addptr create new node" << endl;
-			previous->next[current->quadrant] = (struct node*) malloc( sizeof( struct node ) );
 			// zero out the new node
-			nullify_node( previous->next[current->quadrant] );
-			// get quadrant from the current point
-			previous->next[current->quadrant]->quadrant = current->quadrant;
+			nullify_node( new_node );
+			// get quadrant from the old point
+			new_node->quadrant = current->quadrant;
+			current->quadrant = 0;
 			// new node inherits dimension
-			previous->next[current->quadrant]->dimen = previous->dimen / 2.0;
+			// nullptr from c++11
+			new_node->dimen = previous->dimen / 2.0;
+			previous->next[new_node->quadrant] = new_node;
+			// if previous is null, then dimen should be 1.0 which is default
 			// calculate the new center
-			if( previous->next[current->quadrant]->quadrant & 1 ) {
-				previous->next[current->quadrant]->x_center += previous->next[current->quadrant]->dimen;
+			if( new_node->quadrant & 1 ) {
+				new_node->x_center += new_node->dimen;
 			} else {
-				previous->next[current->quadrant]->x_center -= previous->next[current->quadrant]->dimen;
+				new_node->x_center -= new_node->dimen;
 			}
-			if( previous->next[current->quadrant]->quadrant>>1 & 1 ) {
-				previous->next[current->quadrant]->y_center += previous->next[current->quadrant]->dimen;
+			if( new_node->quadrant>>1 & 1 ) {
+				new_node->y_center += new_node->dimen;
 			} else {
-				previous->next[current->quadrant]->y_center -= previous->next[current->quadrant]->dimen;
+				new_node->y_center -= new_node->dimen;
 			}
 			// recurse on both old_point and point
-			// i'll need to recalculate the quadrant of the old point 'current' and the new point
-			add_point( previous, previous->next[current->quadrant], current );
+			// i'll need to recalculate the quadrant of the old point and the new point
+
+			for( int iter = 0; iter < 4; ++iter ) {
+				if( previous->next[iter] == new_node )
+					cout << "previous->next[" << iter << "] == new node of " << new_node << endl;
+			}
+			for( int iter = 0; iter < 4; ++iter ) {
+				if( new_node->next[iter] != nullptr )
+					cout << "new node has non null" << endl;
+			}
+			add_point( previous, new_node, current);
 			// TODO - if the x and y are the same, then there is infinite recursion
-			add_point( previous, previous->next[current->quadrant], point );
+			add_point( previous, new_node, point );
+			//add_point( previous, previous, new_node );
 		}
 	//current = ( struct node* ) malloc( sizeof( struct node ) );
 	}
@@ -162,14 +175,19 @@ void draw( sf::RenderWindow &window, struct node* &current, sf::CircleShape &dot
 {
 	cout << "draw called" << endl;
 	if( current != nullptr ) {
-		if( current->dimen != 0.0 ) {
-			cout << "draw box" << endl;
+		if( current->dimen > 0 ) {
 			// it's an internal node, let's draw a box
 			box.setSize( sf::Vector2f( current->dimen * window.getSize().x, current->dimen * window.getSize().y ) );
 			box.setPosition( current->x_center * window.getSize().x, current->y_center * window.getSize().y );
+			cout << "draw box" << endl;
 			window.draw( box );
 			for( int iter = 0; iter < CHILDREN; ++iter ) {
-				draw( window, current->next[iter], dot, box );
+				if( current->next[iter] != nullptr )
+				{
+					printf( "from %p calling %p\n", current, current->next[iter] );
+					if( current != current->next[iter] )
+						draw( window, current->next[iter], dot, box );
+				}
 			}
 		} else {
 			// it's a point, lets draw a dot
@@ -180,16 +198,49 @@ void draw( sf::RenderWindow &window, struct node* &current, sf::CircleShape &dot
 	}
 }
 
+void assign( struct node* &current, struct node* &point )
+{
+	current = point;
+}
+
+/*
+ostream& operator<<( ostream &o, struct node* &current )
+{
+	if( current->dimen > 0 )
+	{
+		printf( "node: %p", current );
+		//o << "node: " << &current << endl;
+	} else {
+		printf( "point: %p", current );
+		//o << "point: " << &current << endl;
+	}
+}
+*/
+
+void print_node( struct node* &current )
+{
+	if( current->dimen > 0 )
+		printf( "node: %p\n", current );
+	else
+		printf( "point: %p\n", current );
+	printf( "next: %p\n", current->next );
+	printf( "next[0]: %p\n", current->next[0] );
+}
+
 int main(int argc, char* argv[])
 {
 	// create a pointer to a node, always keep track of this
 	struct node* head = (struct node*) malloc( sizeof( struct node ) );
 	struct node* null = nullptr;
 	nullify_node( head );
+	print_node( head );
 	struct node* dip = random_point();
 	add_point( null, head, dip );
-	dip = random_point();
-	add_point( null, head, dip );
+	for( int classic = 0; classic < 9; ++classic )
+	{
+		dip = random_point();
+		add_point( null, head, dip );
+	}
 
 	/*
 	random_pt = random_point();
