@@ -92,7 +92,7 @@ int main( int argc, char *argv[] )
 	int n = 2000;
 	// number of processors
 	int n_proc = 0;
-	omp_set_num_threads(4);
+	//omp_set_num_threads(4);
 	#pragma omp parallel
 	if( omp_get_thread_num() == 0 )
 		n_proc = omp_get_num_threads();
