@@ -89,7 +89,7 @@ int main( int argc, char *argv[] )
 	// if they are farther away from eachother than this, no interaction besides attraction
 	float cutoff = 0.00001;
 	// number of particles
-	int n = 2000;
+	int n = 1000;
 	// number of processors
 	int n_proc = 0;
 	//omp_set_num_threads(4);
@@ -100,7 +100,7 @@ int main( int argc, char *argv[] )
 	// how many steps to simulate
 	int nSteps = 10;
 	// should it save the frames or not
-	int save_frames = 0;
+	int save_frames = 1;
 	int rgb_array[3];
 	rgb_array[0] = 0;
 	rgb_array[1] = 0;
