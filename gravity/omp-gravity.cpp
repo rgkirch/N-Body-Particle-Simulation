@@ -80,16 +80,14 @@ int main( int argc, char *argv[] )
 	// these values represent the default windowed dimensions (not fullscreen)
 	int window_width = 1920;
 	int window_height = 1080;
-	int window_x_pos = 0.0;
-	int window_y_pos = 0.0;
 	// initial velocity random between 0 and this
-	float initialVelocity = 10.0;
+	float initialVelocity = 00.0;
 	// velocity drops to this fraction of itself every step
-	float velFric = 1.0;
+	float velFric = 0.999;
 	// scale back how far they move, increases the quality of the calculations
 	float timescale = 0.0005;
 	// if they are farther away from eachother than this, no interaction besides attraction
-	float cutoff = 0.00001;
+	float cutoff = 0.000001;
 	// number of particles
 	int n = 1000;
 	// number of processors
@@ -100,7 +98,7 @@ int main( int argc, char *argv[] )
 		n_proc = omp_get_num_threads();
 	printf( "n_proc: %d\n", n_proc );
 	// how many steps to simulate
-	int nSteps = 10;
+	int nSteps = 100;
 	// should it save the frames or not
 	int save_frames = 0;
 	int rgb_array[3];
@@ -123,16 +121,13 @@ int main( int argc, char *argv[] )
         partition_sizes[i] = partition_offsets[i+1] - partition_offsets[i];
 	//	initialize
 	sf::RenderWindow window;
-	window.create( sf::VideoMode( window_width, window_height ), "gravity" );
-	sf::View view;
-	view.setViewport( sf::FloatRect( 0.0, 0.0, 1.0, 1.0 ) );
-	window.setView( view );
 	// create a circle object
 	sf::CircleShape circle(2, 8);
 	circle.setFillColor( sf::Color::Black );
 	srand( time( NULL ) );
 	//	init the particles
 	init_particles( n, particles, initialVelocity );
+	window.create( sf::VideoMode( window_width, window_height ), "gravity" );
 	window.clear( sf::Color::White );
 	float simulation_time = read_timer( );
 	int step = 0;
@@ -166,10 +161,8 @@ int main( int argc, char *argv[] )
 			if( event.type == sf::Event::Resized ) {
 				//cout << "resized to " << event.size.width << " by " << event.size.height << endl;
 				printf( "resized to %d by %d\n", event.size.width, event.size.height );
-				view.setSize( event.size.width, event.size.height );
-				window_width = event.size.width;
-				window_height = event.size.height;
-				//window.clear( sf::Color::White );
+				window.setView( sf::View( sf::FloatRect( 0, 0, event.size.width, event.size.height ) ) );
+				window.clear( sf::Color::White );
 			}
 		}
 		window.clear( sf::Color::White );
@@ -184,8 +177,7 @@ int main( int argc, char *argv[] )
 			//circle.setFillColor(particles[i].color);
 			// fmod is floating point modulus
 			// don't do modulus TODO
-			circle.setPosition( fmod( particles[i].x * window_width, window_width), fmod(particles[i].y * window_height, window_height ) );
-			//circle.setPosition( fmod( particles[i].x * window.getSize().x, window.getSize().x), fmod(particles[i].y * window.getSize().y, window.getSize().y ) );
+			circle.setPosition( particles[i].x * window.getSize().x, particles[i].y * window.getSize().y );
 			// cout << particles[i].x << " " << particles[i].y << endl;
 			// circle.setPosition( .5 * WINDOW_WIDTH, .5 * WINDOW_HEIGHT );
 			//float before = read_timer();
@@ -220,9 +212,9 @@ int main( int argc, char *argv[] )
 		++step;
 		//printf( "%d\n", step );
 		/*
+		*/
 		if( step >= nSteps )
 			window.close();
-		*/
 	}
 	printf( "simulation time: %g\n", read_timer() - simulation_time );
   
@@ -285,6 +277,14 @@ void move( particle_t &p, float timescale, float velFric )
 	p.vy *= velFric;
 	p.x  += p.vx * timescale;
 	p.y  += p.vy * timescale;
+	if( p.x < 0 )
+		p.x += 1;
+	if( p.x > 1 )
+		p.x -= 1;
+	if( p.y < 0 )
+		p.y += 1;
+	if( p.y > 1 )
+		p.y -= 1;
 }
 
 float read_timer( )
