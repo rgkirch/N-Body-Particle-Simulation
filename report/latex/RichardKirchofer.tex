@@ -6,5 +6,15 @@
 \maketitle
 \section{N-body Simulation}
 An n body simulation is a dwarf of computing where every item in the problem must be compared against every other item. n*(n-1)/2 total comparissons must be made. This is why the problem is described as having an n**2 runtime.
-
+\section{Motivation}
+I began exploring this topic because it seemed interesting. I had written a small simulation of our solar system in python but it was extreemely slow. I wanted to expand upon that with the performance parallel computing in c++ which is already a faster language.
+\section{Expectation}
+I didn't have many expectations for this project. I had picked a topic and I had a direction and I knew that I would learn things along the way. I expected that I would find my focus along the way as I worked on the project.
+\section{Meathods}
+\subsection{MPI}
+I began with a simple implementation using MPI since I had done the most work with MPI and felt most comfortable with it. I worked on this code for over a week, modifying the interactions of the particles. I was learning the graphics library SFML which gives me instant feedback on what my simulation is doing. I could change the properties of the simulation and see the effect right away. Much of the work I did with the MPI code taught me how to create and maintain a graphics render window as well as how I wanted to see the particles interact. A difficulty that I faced is that I was fighting the unnecesary ovehead of the MPI calls. It would be much simpler and efficient if I didn't have to send the data around. This is also unnecesary since I was just running the code on my own personal computer.
+\subsection{Barnes-Hut}
+The Barnes-Hut model is an aproximation that sacrafices some accuracy for fewer calculations and a faster runtime. It uses quadtrees to break up the work. The basic rule to follow when dividing up the data is that every node in the quadtree may have at most one point in it. Nodes are responsible for up to four other items which consist of 
+\subsection{OpenMP}
+Going from MPI to OpenMP involved deleting many things and adding a few things. The OpenMP code is much simpler and more efficient.
 \end{document}
