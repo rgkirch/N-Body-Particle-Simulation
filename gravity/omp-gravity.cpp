@@ -212,9 +212,9 @@ int main( int argc, char *argv[] )
 		++step;
 		//printf( "%d\n", step );
 		/*
-		*/
 		if( step >= nSteps )
 			window.close();
+		*/
 	}
 	printf( "simulation time: %g\n", read_timer() - simulation_time );
   
